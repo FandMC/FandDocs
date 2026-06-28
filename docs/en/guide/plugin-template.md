@@ -30,7 +30,7 @@ fandPlugin {
     id.set("example-plugin")
     version.set(project.version.toString())
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 
     description.set("Example Fand plugin")
     authors.add("FandMC")

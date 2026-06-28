@@ -11,7 +11,7 @@ If a jar does not contain `fand-plugin.json`, Fand does not load it as a Fand pl
   "id": "example-plugin",
   "version": "1.0.0",
   "mainClass": "com.example.ExamplePlugin",
-  "apiVersion": "0.1.1"
+  "apiVersion": "0.1.2"
 }
 ```
 
@@ -25,7 +25,7 @@ If a jar does not contain `fand-plugin.json`, Fand does not load it as a Fand pl
   "description": "Example plugin for Fand",
   "website": "https://example.com",
   "license": "MIT",
-  "apiVersion": "0.1.1",
+  "apiVersion": "0.1.2",
   "authors": ["FandMC"],
   "depends": ["required-plugin"],
   "loadAfter": ["soft-provider"],
@@ -50,7 +50,7 @@ If a jar does not contain `fand-plugin.json`, Fand does not load it as a Fand pl
 | `id` | string | Yes | Unique plugin id. Must match `[a-z0-9]+(?:-[a-z0-9]+)*`, such as `example-plugin`. |
 | `version` | string | Yes | Plugin version. Semantic versions such as `1.0.0` are recommended. |
 | `mainClass` | string | Yes | Fully qualified main class. It must implement `io.fand.api.plugin.Plugin` and provide a no-arg constructor. |
-| `apiVersion` | string | Recommended | Fand API version targeted by the plugin. The server accepts missing legacy descriptors and treats them as the current API version; the official Gradle plugin requires this field when validating a new descriptor. An explicit blank string is rejected. |
+| `apiVersion` | string | Recommended | Fand API version targeted by the plugin. The server accepts missing legacy descriptors and applies the runtime compatibility default version; the official Gradle plugin requires this field when validating a new descriptor. An explicit blank string is rejected. |
 | `description` | string | No | Short plugin description. |
 | `website` | string | No | Plugin website or documentation URL. When present, it must use `http` or `https`. |
 | `license` | string | No | License identifier or name, such as `MIT` or `GPL-3.0`. |
@@ -130,7 +130,7 @@ fandPlugin {
     id.set("example-plugin")
     version.set(project.version.toString())
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 
     description.set("Example plugin for Fand")
     website.set("https://example.com")

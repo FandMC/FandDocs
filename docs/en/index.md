@@ -44,7 +44,7 @@ plugins {
 fandPlugin {
     id.set("example-plugin")
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 }
 ```
 

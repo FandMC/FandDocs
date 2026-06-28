@@ -56,17 +56,17 @@ Fand API can be read in layers:
 | Plugin basics | `plugin`, `lifecycle`, `config`, `storage` | Loading, configuration, data directories, persistence |
 | Interaction | `command`, `event`, `scheduler`, `permission` | Player input, server behavior hooks, async/main-thread work, access control |
 | Player experience | `text`, `placeholder`, `bossbar`, `tablist`, `scoreboard`, `gui`, `map` | Text, placeholders, screens, boss bars, player lists, scoreboards, map rendering |
-| World and entities | `world`, `block`, `entity`, `inventory`, `player`, `tag` | Worlds, blocks, entities, players, inventories, vanilla tag lookup |
-| Content extension | `customitem`, `customblock`, `recipe`, `loot`, `advancement`, `enchantment`, `datapack`, `structure` | Custom content, data-pack content, structures, generation-facing features |
+| World and entities | [`world`](/en/api/worlds), [`block`](/en/api/blocks), `entity`, `inventory`, `player`, `tag` | Worlds, blocks, entities, players, inventories, vanilla tag lookup |
+| Content extension | `customitem`, `customblock`, `recipe`, `loot`, `advancement`, `enchantment`, `datapack`, `structure` | Custom content, data-pack files, structures, generation-facing features |
 | Ecosystem integration | `service`, `integration`, `messaging`, `region` | Cross-plugin providers, external resources, plugin messaging, region protection |
-| Low-level presentation | `packet`, `component`, `registry`, `performance`, `gamerule`, `nbs` | Packets, components, registries, performance snapshots, game rules, NBS parsing |
+| Low-level presentation | `packet`, `component`, `registry`, `performance`, `gamerule`, `nbs` | Network packets, components, registries, performance snapshots, game rules, NBS parsing |
 
 ## PluginContext Service Matrix
 
 | Service | Entry Point | Typical Use |
 | --- | --- | --- |
 | Logging | `context.logger()` | SLF4J logger named after the plugin id |
-| Descriptor | `context.descriptor()` | Read `id`, `version`, `mainClass`, dependencies, permission declarations |
+| Descriptor | `context.descriptor()` | Read `id`, `version`, `mainClass`, `apiVersion`, load relations, metadata, and permission declarations |
 | Events | `context.events()` | Register player, entity, world, plugin, and server listeners |
 | Commands | `context.commands()` | Annotated commands, descriptor commands, completions, visible command lookup |
 | Scheduler | `context.scheduler()` | Main-thread, async, delayed, repeating, tick-based tasks |
@@ -103,13 +103,13 @@ Fand API can be read in layers:
 
 | Capability | Entry Point |
 | --- | --- |
-| Server info | `brand()`、`version()`、`minecraftVersion()`、`phase()` |
-| Players | `players()`、`player(UUID)`、`player(String)`、`playerAccess()` |
-| Worlds | `worlds()`、`world(Key)`、`defaultWorld()`、`createWorld(...)`、`unloadWorld(...)` |
-| Registry lookup | `blockType(...)`、`itemType(...)`、`entityType(...)`、`blockTags()`、`itemTags()` |
-| Global services | `events()`、`commands()`、`permissions()`、`scheduler()`、`scoreboard()`、`packets()` |
-| Performance | `performance()`、`currentTick()` |
-| Broadcast | `sendMessage(...)`、`broadcast(...)` |
+| Server info | `brand()`, `version()`, `minecraftVersion()`, `phase()` |
+| Players | `players()`, `player(UUID)`, `player(String)`, `playerAccess()` |
+| Worlds | `worlds()`, `world(Key)`, `defaultWorld()`, `createWorld(...)`, `unloadWorld(...)` |
+| Registry lookup | `blockType(...)`, `itemType(...)`, `entityType(...)`, `blockTags()`, `itemTags()` |
+| Global services | `events()`, `commands()`, `permissions()`, `scheduler()`, `scoreboard()`, `packets()` |
+| Performance | `performance()`, `currentTick()` |
+| Broadcast | `sendMessage(...)`, `broadcast(...)` |
 
 ## Best Practices
 

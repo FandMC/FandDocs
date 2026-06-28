@@ -25,7 +25,7 @@ fandPlugin {
     id.set("example-plugin")
     version.set(project.version.toString())
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 }
 ```
 
@@ -36,7 +36,7 @@ Minimal descriptor:
   "id": "example-plugin",
   "version": "1.0.0",
   "mainClass": "com.example.ExamplePlugin",
-  "apiVersion": "0.1.1"
+  "apiVersion": "0.1.2"
 }
 ```
 

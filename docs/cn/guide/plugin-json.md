@@ -11,7 +11,7 @@
   "id": "example-plugin",
   "version": "1.0.0",
   "mainClass": "com.example.ExamplePlugin",
-  "apiVersion": "0.1.1"
+  "apiVersion": "0.1.2"
 }
 ```
 
@@ -25,7 +25,7 @@
   "description": "Example plugin for Fand",
   "website": "https://example.com",
   "license": "MIT",
-  "apiVersion": "0.1.1",
+  "apiVersion": "0.1.2",
   "authors": ["FandMC"],
   "depends": ["required-plugin"],
   "loadAfter": ["soft-provider"],
@@ -50,7 +50,7 @@
 | `id` | string | 是 | 插件唯一 id。必须匹配 `[a-z0-9]+(?:-[a-z0-9]+)*`，例如 `example-plugin`。 |
 | `version` | string | 是 | 插件版本。推荐使用语义化版本，例如 `1.0.0`。 |
 | `mainClass` | string | 是 | 插件主类全限定名，必须实现 `io.fand.api.plugin.Plugin`，并提供无参构造器。 |
-| `apiVersion` | string | 建议 | 插件面向的 Fand API 版本。服务端为旧 descriptor 兼容允许缺失并按当前 API 版本处理；官方 Gradle 插件校验新 descriptor 时要求声明。显式空字符串会被拒绝。 |
+| `apiVersion` | string | 建议 | 插件面向的 Fand API 版本。服务端为旧 descriptor 兼容允许缺失，并按运行时的兼容默认版本处理；官方 Gradle 插件校验新 descriptor 时要求声明。显式空字符串会被拒绝。 |
 | `description` | string | 否 | 插件简介。 |
 | `website` | string | 否 | 插件网站或文档地址。填写时必须是 `http` 或 `https`。 |
 | `license` | string | 否 | 插件许可证标识或名称，例如 `MIT`、`GPL-3.0`。 |
@@ -130,7 +130,7 @@ fandPlugin {
     id.set("example-plugin")
     version.set(project.version.toString())
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 
     description.set("Example plugin for Fand")
     website.set("https://example.com")

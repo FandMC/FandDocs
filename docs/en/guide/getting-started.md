@@ -22,7 +22,7 @@ plugins {
 fandPlugin {
     id.set("example-plugin")
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 }
 ```
 
@@ -40,7 +40,7 @@ A minimal plugin declares `id`, `version`, `mainClass`, and `apiVersion`.
   "id": "example-plugin",
   "version": "1.0.0",
   "mainClass": "com.example.ExamplePlugin",
-  "apiVersion": "0.1.1"
+  "apiVersion": "0.1.2"
 }
 ```
 

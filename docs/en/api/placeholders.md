@@ -60,6 +60,8 @@ var component = context.miniMessages().parse(player, "<green>%example-plugin_vie
 `parse(viewer, input)` replaces placeholders first, then parses MiniMessage tags. Use the overload with `TagResolver`s for custom tags:
 
 ```java
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+
 var component = context.miniMessages().parse(
         player,
         "<green><name></green>",

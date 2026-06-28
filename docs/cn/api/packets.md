@@ -87,8 +87,9 @@ context.packets()
 
 ```java
 var illusions = context.packets().illusions();
+var blockLocation = block.world().at(block.x(), block.y(), block.z());
 
-illusions.fakeBlock(player, block.location(), previewType);
+illusions.fakeBlock(player, blockLocation, previewType);
 illusions.hideEntity(player, entity);
 illusions.showEntity(player, entity);
 ```

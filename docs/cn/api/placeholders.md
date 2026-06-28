@@ -60,6 +60,8 @@ var component = context.miniMessages().parse(player, "<green>%example-plugin_vie
 `parse(viewer, input)` 会先替换占位符，再解析 MiniMessage 标签。需要自定义 `TagResolver` 时，可以使用重载：
 
 ```java
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+
 var component = context.miniMessages().parse(
         player,
         "<green><name></green>",

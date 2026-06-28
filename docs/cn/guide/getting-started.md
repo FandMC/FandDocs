@@ -22,7 +22,7 @@ plugins {
 fandPlugin {
     id.set("example-plugin")
     mainClass.set("com.example.ExamplePlugin")
-    apiVersion.set("0.1.1")
+    apiVersion.set("0.1.2")
 }
 ```
 
@@ -37,7 +37,7 @@ Gradle 插件会自动配置 Fand API 依赖，生成或校验 `fand-plugin.json
   "id": "example-plugin",
   "version": "1.0.0",
   "mainClass": "com.example.ExamplePlugin",
-  "apiVersion": "0.1.1"
+  "apiVersion": "0.1.2"
 }
 ```
 

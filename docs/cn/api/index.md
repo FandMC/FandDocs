@@ -56,17 +56,17 @@ Fand API 可以按开发任务分成几层：
 | 插件基础 | `plugin`、`lifecycle`、`config`、`storage` | 插件加载、配置、数据目录和持久化 |
 | 交互入口 | `command`、`event`、`scheduler`、`permission` | 玩家输入、监听服务端行为、异步/主线程任务、权限控制 |
 | 玩家体验 | `text`、`placeholder`、`bossbar`、`tablist`、`scoreboard`、`gui`、`map` | 文本、占位符、界面、BossBar、玩家列表、记分板和地图渲染 |
-| 世界与实体 | `world`、`block`、`entity`、`inventory`、`player`、`tag` | 世界、方块、实体、玩家、库存和 vanilla tag 查询 |
-| 内容扩展 | `customitem`、`customblock`、`recipe`、`loot`、`advancement`、`enchantment`、`datapack`、`structure` | 自定义内容、数据包内容、结构模板和生成相关能力 |
+| 世界与实体 | [`world`](/cn/api/worlds)、[`block`](/cn/api/blocks)、`entity`、`inventory`、`player`、`tag` | 世界、方块、实体、玩家、库存和 vanilla tag 查询 |
+| 内容扩展 | `customitem`、`customblock`、`recipe`、`loot`、`advancement`、`enchantment`、`datapack`、`structure` | 自定义内容、data pack 文件、结构模板和生成相关能力 |
 | 生态互通 | `service`、`integration`、`messaging`、`region` | 跨插件 provider、外部资源策略、插件消息和区域保护 |
-| 底层表现 | `packet`、`component`、`registry`、`performance`、`gamerule`、`nbs` | 数据包、组件、注册表、性能快照、自定义规则和 NBS 解析 |
+| 底层表现 | `packet`、`component`、`registry`、`performance`、`gamerule`、`nbs` | 网络数据包、组件、注册表、性能快照、自定义规则和 NBS 解析 |
 
 ## PluginContext 服务矩阵
 
 | 服务 | 入口 | 典型用途 |
 | --- | --- | --- |
 | 日志 | `context.logger()` | 使用插件 id 命名的 SLF4J logger |
-| 描述文件 | `context.descriptor()` | 读取 `id`、`version`、`mainClass`、依赖和权限声明 |
+| 描述文件 | `context.descriptor()` | 读取 `id`、`version`、`mainClass`、`apiVersion`、加载关系、元数据和权限声明 |
 | 生命周期事件 | `context.events()` | 注册玩家、实体、世界、插件和服务端事件监听器 |
 | 命令 | `context.commands()` | 注解命令、描述符命令、补全、可见命令查询 |
 | 调度器 | `context.scheduler()` | 主线程、异步、延迟、周期、tick-based 任务 |
