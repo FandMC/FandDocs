@@ -59,7 +59,7 @@ Fand API can be read in layers:
 | Interaction | `command`, `event`, `scheduler`, `permission` | Player input, server behavior hooks, async/main-thread work, access control |
 | Player experience | `text`, `placeholder`, `bossbar`, `tablist`, `scoreboard`, `gui`, `map` | Text, placeholders, screens, boss bars, player lists, scoreboards, map rendering |
 | World and entities | [`world`](/en/api/worlds), [`entity`](/en/api/entities), [`player`](/en/api/players), [`block`](/en/api/blocks), [`item`](/en/api/items), [`component`](/en/api/components), `inventory`, `tag` | Worlds, entities, players, blocks, items, components, inventories, vanilla tag lookup |
-| Content extension | `customitem`, `customblock`, `recipe`, `loot`, `advancement`, `enchantment`, `datapack`, `structure` | Custom content, data-pack files, structures, generation-facing features |
+| Content extension | `customitem`, `customblock`, [`recipe`](/en/api/recipes), [`loot`](/en/api/loot), [`advancement`](/en/api/advancements), [`enchantment`](/en/api/enchantments), `datapack`, `structure` | Custom content, recipes, loot tables, advancements, enchantments, data-pack files, structures, generation-facing features |
 | Ecosystem integration | `service`, `integration`, `messaging`, `region` | Cross-plugin providers, external resources, plugin messaging, region protection |
 | Low-level presentation | `packet`, [`component`](/en/api/components), `registry`, `performance`, `gamerule`, `nbs` | Network packets, components, registries, performance snapshots, game rules, NBS parsing |
 
@@ -89,10 +89,10 @@ Fand API can be read in layers:
 | Plugin Messaging | `context.pluginMessaging()` | Standard plugin message channels |
 | Custom Items | `context.customItems()` | Register custom item types, item templates, and base-item bindings |
 | Custom Blocks | `context.customBlocks()` | Register custom block types, listeners, item bindings |
-| Recipes | `context.recipes()` | Register and remove recipes |
-| Loot Tables | `context.lootTables()` | Loot tables in the plugin namespace |
-| Advancements | `context.advancements()` | Advancements in the plugin namespace |
-| Enchantments | `context.enchantments()` | Enchantments in the plugin namespace |
+| Recipes | `context.recipes()` | Register, look up, and remove recipes in the plugin namespace |
+| Loot Tables | `context.lootTables()` | Look up, generate, and replace loot tables in the plugin namespace |
+| Advancements | `context.advancements()` | Register and look up advancements in the plugin namespace |
+| Enchantments | `context.enchantments()` | Register and look up enchantments in the plugin namespace |
 | Data Packs | `context.dataPacks()` | Plugin-scoped data-pack file trees |
 | Structures | `context.structures()` | Template save, import, export, placement, locate |
 | Game Rules | `context.gameRules()` | Plugin-namespaced custom game rules |

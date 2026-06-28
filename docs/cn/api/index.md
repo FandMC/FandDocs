@@ -59,7 +59,7 @@ Fand API 可以按开发任务分成几层：
 | 交互入口 | `command`、`event`、`scheduler`、`permission` | 玩家输入、监听服务端行为、异步/主线程任务、权限控制 |
 | 玩家体验 | `text`、`placeholder`、`bossbar`、`tablist`、`scoreboard`、`gui`、`map` | 文本、占位符、界面、BossBar、玩家列表、记分板和地图渲染 |
 | 世界与实体 | [`world`](/cn/api/worlds)、[`entity`](/cn/api/entities)、[`player`](/cn/api/players)、[`block`](/cn/api/blocks)、[`item`](/cn/api/items)、[`component`](/cn/api/components)、`inventory`、`tag` | 世界、实体、玩家、方块、物品、组件、背包/容器和原版标签查询 |
-| 内容扩展 | `customitem`、`customblock`、`recipe`、`loot`、`advancement`、`enchantment`、`datapack`、`structure` | 自定义内容、data pack 文件、结构模板和生成相关能力 |
+| 内容扩展 | `customitem`、`customblock`、[`recipe`](/cn/api/recipes)、[`loot`](/cn/api/loot)、[`advancement`](/cn/api/advancements)、[`enchantment`](/cn/api/enchantments)、`datapack`、`structure` | 自定义内容、配方、战利品表、进度、附魔、data pack 文件、结构模板和生成相关能力 |
 | 生态互通 | `service`、`integration`、`messaging`、`region` | 跨插件 provider、外部资源策略、插件消息和区域保护 |
 | 底层表现 | `packet`、[`component`](/cn/api/components)、`registry`、`performance`、`gamerule`、`nbs` | 网络数据包、组件、注册表、性能快照、自定义规则和 NBS 解析 |
 
@@ -89,10 +89,10 @@ Fand API 可以按开发任务分成几层：
 | 插件消息 | `context.pluginMessaging()` | 标准 plugin message channel |
 | 自定义物品 | `context.customItems()` | 注册自定义物品类型、模板物品和基础物品绑定 |
 | 自定义方块 | `context.customBlocks()` | 注册自定义方块类型、监听器和物品绑定 |
-| 配方 | `context.recipes()` | 注册和移除配方 |
-| 战利品表 | `context.lootTables()` | 插件命名空间下的 loot table |
-| 进度 | `context.advancements()` | 插件命名空间下的 advancement |
-| 附魔 | `context.enchantments()` | 插件命名空间下的 enchantment |
+| 配方 | `context.recipes()` | 注册、查询和移除插件命名空间下的配方 |
+| 战利品表 | `context.lootTables()` | 查询、生成和替换插件命名空间下的战利品表 |
+| 进度 | `context.advancements()` | 注册和查询插件命名空间下的进度 |
+| 附魔 | `context.enchantments()` | 注册和查询插件命名空间下的附魔 |
 | 数据包文件树 | `context.dataPacks()` | 插件作用域 vanilla data pack 文件树 |
 | 结构 | `context.structures()` | 模板保存、导入、导出、放置和定位 |
 | 游戏规则 | `context.gameRules()` | 插件命名空间自定义 game rule |
