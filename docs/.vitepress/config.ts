@@ -63,7 +63,13 @@ export default defineConfig({
                 { text: '调度器', link: '/cn/api/scheduler' },
                 { text: '配置', link: '/cn/api/configuration' },
                 { text: '权限', link: '/cn/api/permissions' },
-                { text: '服务注册', link: '/cn/api/services' }
+                { text: '服务注册', link: '/cn/api/services' },
+                { text: '区域', link: '/cn/api/regions' },
+                { text: '数据包', link: '/cn/api/packets' },
+                { text: '占位符与 MiniMessage', link: '/cn/api/placeholders' },
+                { text: 'GUI', link: '/cn/api/gui' },
+                { text: '记分板', link: '/cn/api/scoreboard' },
+                { text: '玩家表现', link: '/cn/api/presentation' }
               ]
             }
           ]
@@ -126,7 +132,13 @@ export default defineConfig({
                 { text: 'Scheduler', link: '/en/api/scheduler' },
                 { text: 'Configuration', link: '/en/api/configuration' },
                 { text: 'Permissions', link: '/en/api/permissions' },
-                { text: 'Services', link: '/en/api/services' }
+                { text: 'Services', link: '/en/api/services' },
+                { text: 'Regions', link: '/en/api/regions' },
+                { text: 'Packets', link: '/en/api/packets' },
+                { text: 'Placeholders and MiniMessage', link: '/en/api/placeholders' },
+                { text: 'GUI', link: '/en/api/gui' },
+                { text: 'Scoreboards', link: '/en/api/scoreboard' },
+                { text: 'Player Presentation', link: '/en/api/presentation' }
               ]
             }
           ]

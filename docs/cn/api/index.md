@@ -77,15 +77,11 @@ Fand API 可以按开发任务分成几层：
 | 战利品表 | `context.lootTables()` | 插件命名空间下的 loot table |
 | 进度 | `context.advancements()` | 插件命名空间下的 advancement |
 | 附魔 | `context.enchantments()` | 插件命名空间下的 enchantment |
-| 数据包 | `context.dataPacks()` | 插件作用域数据包文件树 |
+| 数据包文件树 | `context.dataPacks()` | 插件作用域 vanilla data pack 文件树 |
 | 结构 | `context.structures()` | 模板保存、导入、导出、放置和定位 |
 | 游戏规则 | `context.gameRules()` | 插件命名空间自定义 game rule |
 | 模拟玩家 | `context.simulatedPlayers()` | 服务端侧模拟玩家 |
 | 外部集成 | `context.integrations()` | SQL、Redis、MQ 等外部资源策略描述 |
-
-## 区域 flag 解析顺序
-
-`RegionService.applicableRegions(location)` 的顺序是 API 语义的一部分：先按 protection priority 从高到低，再按区域体积从小到大，最后按较新注册优先。`resolveFlag(location, flag)` 会按这个顺序检查区域；每个区域先检查自己的显式 flag，再沿 parent 链查找。第一个显式值获胜，包括来自 parent 的值；一旦命中，后续更低优先级的重叠区域不会再参与解析。`RegionFlagResolution.trace()` 会记录本次检查过的区域和继承状态。
 
 ## 全局 Server 视图
 

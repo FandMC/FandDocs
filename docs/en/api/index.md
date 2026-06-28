@@ -83,10 +83,6 @@ Fand API can be read in layers:
 | Simulated Players | `context.simulatedPlayers()` | Server-side simulated players |
 | Integrations | `context.integrations()` | External resource strategies for SQL, Redis, MQ, and similar systems |
 
-## Region Flag Resolution
-
-`RegionService.applicableRegions(location)` has API-defined ordering: higher protection priority first, then smaller region volume, then the most recent registration. `resolveFlag(location, flag)` walks regions in that order. For each region it checks the region's explicit flag first, then its parent chain. The first explicit value wins, including one inherited from a parent; once a match is found, lower-priority overlapping regions are not consulted. `RegionFlagResolution.trace()` records the regions inspected and whether each trace entry was inherited.
-
 ## Global Server View
 
 `Server` is an Adventure `ForwardingAudience` that forwards messages to current online players. It is useful for global lookup and broadcast, but plugin-owned registrations should still prefer `PluginContext`.

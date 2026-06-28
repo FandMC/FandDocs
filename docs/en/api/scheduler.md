@@ -79,14 +79,14 @@ Plugin-scoped tasks are normally cleaned up when the plugin is disabled. Tempora
 
 ## Thread Boundaries
 
-Do not directly mutate these from async tasks:
+`runAsync` tasks run on background workers and do not have implicit ordering with the server tick thread. Many high-level Fand Server APIs marshal the actual Minecraft state access back to the server thread internally, including parts of world/entity access, scoreboards, boss bars, tab lists, maps, and packet sending.
 
-- Worlds, chunks, blocks, entities.
-- Player objects and inventories.
-- Most server registry state.
-- GUI, boss bar, tab-list, and scoreboard state.
+So "currently on an async thread" does not mean every Fand API call is invalid. A safer boundary is:
 
-The usual pattern is to do expensive calculation or I/O asynchronously, then return to the main thread to apply the result.
+- Use async tasks for file I/O, network requests, database queries, compression, and pure computation.
+- Do not directly touch unwrapped NMS/vanilla objects, mutable event payloads, or objects whose threading semantics you have not verified.
+- If a group of mutations must happen in tick order, or must remain predictably ordered with other main-thread logic, put the apply phase inside `runMain`.
+- Avoid high-frequency calls from many async tasks into APIs that synchronously wait for a server-thread result, because that can leave workers blocked behind the main-thread queue.
 
 ## Guidelines
 
