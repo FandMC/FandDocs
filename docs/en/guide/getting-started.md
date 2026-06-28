@@ -16,7 +16,7 @@ For plugin development, use the official Gradle plugin. It adds `fand-api`, proc
 
 ```kotlin
 plugins {
-    id("io.fand.plugin") version "latest.release"
+    id("io.fand.plugin") version "0.1.2"
 }
 
 fandPlugin {

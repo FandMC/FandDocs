@@ -1,6 +1,6 @@
 # Worlds
 
-`World` represents a loaded server dimension. It is identified by a `Key`, such as `minecraft:overworld`, `minecraft:the_nether`, `minecraft:the_end`, or a dynamically created world key. `World` is also an Adventure `Audience` that forwards messages to players currently in that world.
+`World` represents a loaded server dimension. It is identified by a `Key`. For fixed vanilla dimensions, use generated `DimensionTypeKey` constants such as `DimensionTypeKey.OVERWORLD`, `DimensionTypeKey.NETHER`, and `DimensionTypeKey.END`; dynamically created worlds still use their own keys. `World` is also an Adventure `Audience` that forwards messages to players currently in that world.
 
 ```java
 Fand.server().defaultWorld().ifPresent(world -> {
@@ -13,8 +13,10 @@ Fand.server().defaultWorld().ifPresent(world -> {
 Global world access lives on `Fand.server()`:
 
 ```java
+import io.fand.api.world.generation.DimensionTypeKey;
+
 var worlds = Fand.server().worlds();
-var overworld = Fand.server().world(Key.key("minecraft:overworld"));
+var overworld = Fand.server().world(DimensionTypeKey.OVERWORLD.key());
 var defaultWorld = Fand.server().defaultWorld();
 ```
 
@@ -25,11 +27,13 @@ Plugin-owned registrations should still prefer `PluginContext`. World lookup is 
 `world.at(...)` creates an immutable `Location`. `world.blockAt(...)` returns a lazy `Block` position handle; real reads or writes happen when calling `block.type()`, `block.setType(...)`, and similar methods.
 
 ```java
+import io.fand.api.block.BlockKey;
+
 var spawn = world.at(0.5, 80.0, 0.5, 0.0f, 0.0f);
 var block = world.blockAt(0, 79, 0);
 
 if (block.air()) {
-    block.setType(BlockTypes.of("minecraft:stone"));
+    block.setType(BlockTypes.of(BlockKey.STONE));
 }
 ```
 
@@ -105,7 +109,7 @@ var max = world.at(16, 70, 16);
 world.fillBlocks(
         min,
         max,
-        BlockTypes.of("minecraft:glass"),
+        BlockTypes.of(BlockKey.GLASS),
         DataComponentMap.EMPTY,
         BlockBatchOptions.defaults().withMaxBlocksPerTick(2048))
         .thenAccept(result -> context.logger().info(
@@ -126,8 +130,8 @@ var region = BlockRegion.cube(player.location(), 8);
 
 world.replaceBlocks(
         region,
-        type -> type.key().asString().equals("minecraft:stone"),
-        BlockTypes.of("minecraft:deepslate"),
+        type -> type.key().equals(BlockKey.STONE.key()),
+        BlockTypes.of(BlockKey.DEEPSLATE),
         BlockScanOptions.defaults().withLoadedChunksOnly(true));
 ```
 
@@ -138,11 +142,14 @@ Default scans only process loaded chunks, avoiding accidental large-scale chunk 
 Worlds can play sounds, spawn particles, drop items, spawn entities, strike lightning, and create explosions.
 
 ```java
+import io.fand.api.item.ItemKey;
+import io.fand.api.world.sound.SoundKey;
+
 world.playSound(
         player.location(),
-        SoundEffect.of("minecraft:block.note_block.pling", SoundCategory.PLAYER));
+        SoundEffect.of(SoundKey.NOTE_BLOCK_PLING, SoundCategory.PLAYER));
 
-world.dropItem(player.location(), ItemTypes.of("minecraft:diamond"), 1);
+world.dropItem(player.location(), ItemTypes.of(ItemKey.DIAMOND), 1);
 world.strikeLightning(player.location(), true);
 ```
 
@@ -196,6 +203,7 @@ This example creates a void world, loads the center chunk, places a glass platfo
 package com.example;
 
 import io.fand.api.Fand;
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 import io.fand.api.component.DataComponentMap;
 import io.fand.api.entity.Player;
@@ -223,7 +231,7 @@ public final class ArenaWorlds {
                     return world.fillBlocks(
                             min,
                             max,
-                            BlockTypes.of("minecraft:glass"),
+                            BlockTypes.of(BlockKey.GLASS),
                             DataComponentMap.EMPTY,
                             BlockBatchOptions.defaults())
                             .thenApply(result -> world);

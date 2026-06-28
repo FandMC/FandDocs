@@ -1,6 +1,6 @@
 # 世界
 
-`World` 表示服务端已加载的维度。它由 `Key` 标识，例如 `minecraft:overworld`、`minecraft:the_nether`、`minecraft:the_end`，也可以是动态创建的世界 key。`World` 同时是 Adventure `Audience`，会把消息转发给当前在该世界里的玩家。
+`World` 表示服务端已加载的维度。它由 `Key` 标识，固定 vanilla 维度可以使用数据生成的 `DimensionTypeKey`，例如 `DimensionTypeKey.OVERWORLD`、`DimensionTypeKey.NETHER`、`DimensionTypeKey.END`；动态创建的世界仍然使用自己的 key。`World` 同时是 Adventure `Audience`，会把消息转发给当前在该世界里的玩家。
 
 ```java
 Fand.server().defaultWorld().ifPresent(world -> {
@@ -13,8 +13,10 @@ Fand.server().defaultWorld().ifPresent(world -> {
 全局世界入口在 `Fand.server()` 上：
 
 ```java
+import io.fand.api.world.generation.DimensionTypeKey;
+
 var worlds = Fand.server().worlds();
-var overworld = Fand.server().world(Key.key("minecraft:overworld"));
+var overworld = Fand.server().world(DimensionTypeKey.OVERWORLD.key());
 var defaultWorld = Fand.server().defaultWorld();
 ```
 
@@ -25,11 +27,13 @@ var defaultWorld = Fand.server().defaultWorld();
 `world.at(...)` 创建不可变 `Location`。`world.blockAt(...)` 返回一个懒加载 `Block` 位置句柄，真正读写发生在 `block.type()`、`block.setType(...)` 等调用时。
 
 ```java
+import io.fand.api.block.BlockKey;
+
 var spawn = world.at(0.5, 80.0, 0.5, 0.0f, 0.0f);
 var block = world.blockAt(0, 79, 0);
 
 if (block.air()) {
-    block.setType(BlockTypes.of("minecraft:stone"));
+    block.setType(BlockTypes.of(BlockKey.STONE));
 }
 ```
 
@@ -105,7 +109,7 @@ var max = world.at(16, 70, 16);
 world.fillBlocks(
         min,
         max,
-        BlockTypes.of("minecraft:glass"),
+        BlockTypes.of(BlockKey.GLASS),
         DataComponentMap.EMPTY,
         BlockBatchOptions.defaults().withMaxBlocksPerTick(2048))
         .thenAccept(result -> context.logger().info(
@@ -126,8 +130,8 @@ var region = BlockRegion.cube(player.location(), 8);
 
 world.replaceBlocks(
         region,
-        type -> type.key().asString().equals("minecraft:stone"),
-        BlockTypes.of("minecraft:deepslate"),
+        type -> type.key().equals(BlockKey.STONE.key()),
+        BlockTypes.of(BlockKey.DEEPSLATE),
         BlockScanOptions.defaults().withLoadedChunksOnly(true));
 ```
 
@@ -138,11 +142,14 @@ world.replaceBlocks(
 世界可以播放声音、生成粒子、掉落物品、生成实体、闪电和爆炸。
 
 ```java
+import io.fand.api.item.ItemKey;
+import io.fand.api.world.sound.SoundKey;
+
 world.playSound(
         player.location(),
-        SoundEffect.of("minecraft:block.note_block.pling", SoundCategory.PLAYER));
+        SoundEffect.of(SoundKey.NOTE_BLOCK_PLING, SoundCategory.PLAYER));
 
-world.dropItem(player.location(), ItemTypes.of("minecraft:diamond"), 1);
+world.dropItem(player.location(), ItemTypes.of(ItemKey.DIAMOND), 1);
 world.strikeLightning(player.location(), true);
 ```
 
@@ -196,6 +203,7 @@ Fand.server().unloadWorld(Key.key("example:arena"));
 package com.example;
 
 import io.fand.api.Fand;
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 import io.fand.api.component.DataComponentMap;
 import io.fand.api.entity.Player;
@@ -223,7 +231,7 @@ public final class ArenaWorlds {
                     return world.fillBlocks(
                             min,
                             max,
-                            BlockTypes.of("minecraft:glass"),
+                            BlockTypes.of(BlockKey.GLASS),
                             DataComponentMap.EMPTY,
                             BlockBatchOptions.defaults())
                             .thenApply(result -> world);

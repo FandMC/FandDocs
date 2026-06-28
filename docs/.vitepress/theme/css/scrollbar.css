@@ -1,0 +1,73 @@
+:root {
+  scrollbar-color: rgba(92, 121, 255, 0.5) transparent;
+  scrollbar-width: thin;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+* {
+  scrollbar-color: rgba(92, 121, 255, 0.45) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(92, 121, 255, 0.72),
+      rgba(32, 170, 137, 0.66)
+    );
+  border: 3px solid var(--vp-c-bg);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(92, 121, 255, 0.9),
+      rgba(32, 170, 137, 0.82)
+    );
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.dark {
+  scrollbar-color: rgba(126, 151, 255, 0.56) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(126, 151, 255, 0.5) transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  border-color: var(--vp-c-bg);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(126, 151, 255, 0.76),
+      rgba(38, 194, 157, 0.7)
+    );
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(150, 171, 255, 0.92),
+      rgba(56, 217, 183, 0.86)
+    );
+}

@@ -41,10 +41,12 @@ public final class ExamplePlugin implements Plugin {
 ```
 
 ```java
+import io.fand.api.item.ItemKey;
+
 Fand.server().players();
 Fand.server().worlds();
 Fand.server().performance();
-Fand.server().itemType(Key.key("minecraft:diamond"));
+Fand.server().itemType(ItemKey.DIAMOND.key());
 ```
 
 ## API 分层
@@ -56,10 +58,10 @@ Fand API 可以按开发任务分成几层：
 | 插件基础 | `plugin`、`lifecycle`、`config`、`storage` | 插件加载、配置、数据目录和持久化 |
 | 交互入口 | `command`、`event`、`scheduler`、`permission` | 玩家输入、监听服务端行为、异步/主线程任务、权限控制 |
 | 玩家体验 | `text`、`placeholder`、`bossbar`、`tablist`、`scoreboard`、`gui`、`map` | 文本、占位符、界面、BossBar、玩家列表、记分板和地图渲染 |
-| 世界与实体 | [`world`](/cn/api/worlds)、[`block`](/cn/api/blocks)、`entity`、`inventory`、`player`、`tag` | 世界、方块、实体、玩家、库存和 vanilla tag 查询 |
+| 世界与实体 | [`world`](/cn/api/worlds)、[`entity`](/cn/api/entities)、[`player`](/cn/api/players)、[`block`](/cn/api/blocks)、[`item`](/cn/api/items)、[`component`](/cn/api/components)、`inventory`、`tag` | 世界、实体、玩家、方块、物品、组件、背包/容器和原版标签查询 |
 | 内容扩展 | `customitem`、`customblock`、`recipe`、`loot`、`advancement`、`enchantment`、`datapack`、`structure` | 自定义内容、data pack 文件、结构模板和生成相关能力 |
 | 生态互通 | `service`、`integration`、`messaging`、`region` | 跨插件 provider、外部资源策略、插件消息和区域保护 |
-| 底层表现 | `packet`、`component`、`registry`、`performance`、`gamerule`、`nbs` | 网络数据包、组件、注册表、性能快照、自定义规则和 NBS 解析 |
+| 底层表现 | `packet`、[`component`](/cn/api/components)、`registry`、`performance`、`gamerule`、`nbs` | 网络数据包、组件、注册表、性能快照、自定义规则和 NBS 解析 |
 
 ## PluginContext 服务矩阵
 
@@ -79,13 +81,13 @@ Fand API 可以按开发任务分成几层：
 | 数据包 | `context.packets()` | 拦截、构造、发送、custom payload、fake block/entity |
 | 占位符 | `context.placeholders()` | 注册和解析 `%namespace_value%` 风格占位符 |
 | MiniMessage | `context.miniMessages()` | Adventure MiniMessage 与 Fand 占位符整合 |
-| GUI | `context.guis()` | 库存界面、slot handler、close handler |
+| GUI | `context.guis()` | 容器菜单、槽位点击处理器、关闭回调 |
 | 记分板 | `context.scoreboard()` | objective、display slot、team、nameplate |
 | BossBar | `context.bossBars()` | 创建和更新 BossBar，按插件生命周期清理 |
 | TabList | `context.tabLists()` | per-viewer 玩家列表显示、隐藏、排序和条目管理 |
 | 地图 | `context.maps()` | 地图 renderer、cursor、玩家相关渲染 |
 | 插件消息 | `context.pluginMessaging()` | 标准 plugin message channel |
-| 自定义物品 | `context.customItems()` | 注册自定义物品类型和基础物品绑定 |
+| 自定义物品 | `context.customItems()` | 注册自定义物品类型、模板物品和基础物品绑定 |
 | 自定义方块 | `context.customBlocks()` | 注册自定义方块类型、监听器和物品绑定 |
 | 配方 | `context.recipes()` | 注册和移除配方 |
 | 战利品表 | `context.lootTables()` | 插件命名空间下的 loot table |
@@ -115,7 +117,7 @@ Fand API 可以按开发任务分成几层：
 
 - 生命周期相关注册放在 `onEnable`，释放外部资源放在 `onDisable`。
 - 优先使用 `context.xxx()`，除非明确需要全服查询或全局广播。
-- 事件监听器运行在触发事件的线程上，需要修改世界、实体、库存时跳回主线程。
+- 事件监听器运行在触发事件的线程上，需要修改世界、实体、背包或容器时跳回主线程。
 - 异步任务不要直接操作主线程状态；用 `context.scheduler().runMain(...)` 回到服务端线程。
 - `ServiceRegistry` 适合做生态互通，不适合替代普通 Java 依赖注入。
 - 权限节点、命令、配置 key 建议统一使用插件 id 作为前缀。
@@ -125,7 +127,7 @@ Fand API 可以按开发任务分成几层：
 - 看到 `fand-api` 接口里的 default 返回值或占位异常，就误以为运行时没有实现；真实行为由 Fand Server 运行时提供。
 - 从 Paper 迁移时机械寻找 `getXxx()` 方法，忽略了 Fand 的属性式 accessor。
 - 把所有服务都从 `Fand.server()` 获取，导致插件作用域清理失效或资源归属不清。
-- 在异步任务或异步事件里直接操作未封装的世界/实体/库存对象。
+- 在异步任务或异步事件里直接操作未封装的世界、实体、背包或容器对象。
 - 把 `ServiceRegistry` 当作插件内部对象容器，注册 DAO、配置对象或线程池。
 - 没有在 descriptor 或 `PermissionService` 注册公开权限节点，管理工具无法发现默认策略。
 
@@ -186,7 +188,19 @@ public final class ExamplePlugin implements Plugin {
 }
 ```
 
-## Maven 坐标
+## 依赖配置
+
+官方 Gradle 插件版本是 `0.1.2`，它会自动配置 API 依赖，并处理 `fand-plugin.json`。新插件工程建议优先用这种写法。
+
+```kotlin
+plugins {
+    id("io.fand.plugin") version "0.1.2"
+}
+```
+
+如果你只是写普通 Java/Gradle/Maven 项目，可以直接依赖 `fand-api`。下面分别是 Gradle Kotlin DSL、Gradle Groovy DSL 和 Maven POM 的写法。
+
+### Gradle Kotlin DSL
 
 ```kotlin
 repositories {
@@ -194,8 +208,42 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.fand:fand-api:latest.release")
+    compileOnly("io.fand:fand-api:0.1.2")
 }
 ```
 
-实际插件工程建议优先使用官方 Gradle 插件，它会自动配置 API 依赖并处理 `fand-plugin.json`。
+### Gradle Groovy DSL
+
+```groovy
+repositories {
+    maven {
+        url = uri("https://repo.fandmc.cn/repository/maven-public/")
+    }
+}
+
+dependencies {
+    compileOnly "io.fand:fand-api:0.1.2"
+}
+```
+
+### Maven POM
+
+Maven 项目建议写固定版本，避免每次构建时解析到不同 API。下面用 `0.1.2` 举例。
+
+```xml
+<repositories>
+    <repository>
+        <id>fandmc</id>
+        <url>https://repo.fandmc.cn/repository/maven-public/</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>io.fand</groupId>
+        <artifactId>fand-api</artifactId>
+        <version>0.1.2</version>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+```

@@ -38,7 +38,7 @@ New plugins should start with the official Gradle plugin. It configures `fand-ap
 
 ```kotlin
 plugins {
-    id("io.fand.plugin") version "latest.release"
+    id("io.fand.plugin") version "0.1.2"
 }
 
 fandPlugin {

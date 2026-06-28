@@ -128,6 +128,7 @@ import io.fand.api.plugin.PluginContext;
 import io.fand.api.region.RegionDefinition;
 import io.fand.api.region.RegionFlag;
 import io.fand.api.world.BlockRegion;
+import io.fand.api.world.generation.DimensionTypeKey;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 
@@ -141,7 +142,7 @@ public final class ExamplePlugin implements Plugin {
 
         var spawn = RegionDefinition.builder(
                 Key.key("example:spawn"),
-                Key.key("minecraft:overworld"),
+                DimensionTypeKey.OVERWORLD.key(),
                 new BlockRegion(-32, 0, -32, 32, 255, 32))
                 .priority(100)
                 .flag(buildFlag, false)

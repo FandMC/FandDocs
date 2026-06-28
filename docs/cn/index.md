@@ -38,7 +38,7 @@ Fand 的目标是让插件开发者直接面向稳定 API 编写功能，而不�
 
 ```kotlin
 plugins {
-    id("io.fand.plugin") version "latest.release"
+    id("io.fand.plugin") version "0.1.2"
 }
 
 fandPlugin {

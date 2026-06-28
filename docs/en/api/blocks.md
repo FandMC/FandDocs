@@ -3,24 +3,28 @@
 `Block` is a lightweight handle to an integer block position inside a `World`. It is not a block-state snapshot: `type()`, `fluidState()`, `stateProperties()`, and `blockEntity()` read live state at that position, while `setType(...)`, `setStateProperty(...)`, `setFluid(...)`, and `breakNaturally(...)` mutate the world.
 
 ```java
+import io.fand.api.block.BlockKey;
+import io.fand.api.block.BlockTypes;
+
 var block = player.world().blockAt(
         player.location().blockX(),
         player.location().blockY() - 1,
         player.location().blockZ());
 
-if (block.type().key().asString().equals("minecraft:grass_block")) {
-    block.setType(BlockTypes.of("minecraft:gold_block"));
+if (block.type().key().equals(BlockKey.GRASS_BLOCK.key())) {
+    block.setType(BlockTypes.of(BlockKey.GOLD_BLOCK));
 }
 ```
 
 ## Block and BlockType
 
-`BlockType` is a registry type such as `minecraft:stone`. `Block` is a position in a world. Multiple `Block` handles may point at the same position; the world is read when you access live state.
+`BlockType` is a registry type. For fixed vanilla blocks, prefer generated `BlockKey` constants such as `BlockKey.STONE` and `BlockKey.GRASS_BLOCK`. Use raw string ids only for runtime data such as config files, player input, or external storage.
 
 ```java
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 
-var stone = BlockTypes.of("minecraft:stone");
+var stone = BlockTypes.of(BlockKey.STONE);
 var block = world.blockAt(0, 64, 0);
 
 block.setType(stone);
@@ -29,7 +33,7 @@ block.setType(stone);
 Use `BlockTypes.find(...)` when you only want to query whether a type exists:
 
 ```java
-BlockTypes.find(Key.key("minecraft:deepslate"))
+BlockTypes.find(BlockKey.DEEPSLATE)
         .ifPresent(type -> context.logger().info("found {}", type.key()));
 ```
 
@@ -42,7 +46,7 @@ var clicked = event.block();
 var above = clicked.relative(BlockFace.UP);
 
 if (above.air()) {
-    above.setType(BlockTypes.of("minecraft:torch"));
+    above.setType(BlockTypes.of(BlockKey.TORCH));
 }
 ```
 
@@ -153,6 +157,7 @@ Block-state properties use strings to expose vanilla's generic state system with
 ## Best Practices
 
 - Use `block.setType(...)` for one position and `world.setBlocks(...)`, `fillBlocks(...)`, or `replaceBlocks(...)` for large regions.
+- Use generated `BlockKey` constants for fixed vanilla blocks instead of hard-coded `"minecraft:..."` block ids.
 - Store world key and coordinates instead of keeping a long-lived `Block` handle.
 - Check `stateProperties()` or handle `false` before relying on state-property changes.
 - Use block components for your own persistent block state, not as a replacement for every vanilla block entity.
@@ -164,6 +169,7 @@ Block-state properties use strings to expose vanilla's generic state system with
 - `BlockType.physics()` is for the default state; `Block.physics()` is for the live state.
 - GUI item-slot behavior has nothing to do with real block mutation; use `Block` or `World` APIs.
 - `setStateProperty` returning `false` is not an exception. It usually means the property name or value is not valid for the current block.
+- Hard-coding fixed block ids such as `"minecraft:<id>"`, bypassing Fand's generated keys and compile-time checks.
 - Looping over many `setType` calls can pressure ticks. Use batch APIs and limit changes per tick.
 
 ## Complete Example: Replace a Block and Preserve Drops
@@ -174,6 +180,7 @@ This example replaces the block below a player with glass. If the original block
 package com.example;
 
 import io.fand.api.block.Block;
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 import io.fand.api.entity.Player;
 import io.fand.api.item.ItemStack;
@@ -199,7 +206,7 @@ public final class BlockTools {
         }
 
         var drops = block.drops(tool);
-        if (!block.setType(BlockTypes.of("minecraft:glass"))) {
+        if (!block.setType(BlockTypes.of(BlockKey.GLASS))) {
             player.sendMessage(net.kyori.adventure.text.Component.text("Block change failed"));
             return;
         }

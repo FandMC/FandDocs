@@ -41,10 +41,12 @@ public final class ExamplePlugin implements Plugin {
 ```
 
 ```java
+import io.fand.api.item.ItemKey;
+
 Fand.server().players();
 Fand.server().worlds();
 Fand.server().performance();
-Fand.server().itemType(Key.key("minecraft:diamond"));
+Fand.server().itemType(ItemKey.DIAMOND.key());
 ```
 
 ## API Layers
@@ -56,10 +58,10 @@ Fand API can be read in layers:
 | Plugin basics | `plugin`, `lifecycle`, `config`, `storage` | Loading, configuration, data directories, persistence |
 | Interaction | `command`, `event`, `scheduler`, `permission` | Player input, server behavior hooks, async/main-thread work, access control |
 | Player experience | `text`, `placeholder`, `bossbar`, `tablist`, `scoreboard`, `gui`, `map` | Text, placeholders, screens, boss bars, player lists, scoreboards, map rendering |
-| World and entities | [`world`](/en/api/worlds), [`block`](/en/api/blocks), `entity`, `inventory`, `player`, `tag` | Worlds, blocks, entities, players, inventories, vanilla tag lookup |
+| World and entities | [`world`](/en/api/worlds), [`entity`](/en/api/entities), [`player`](/en/api/players), [`block`](/en/api/blocks), [`item`](/en/api/items), [`component`](/en/api/components), `inventory`, `tag` | Worlds, entities, players, blocks, items, components, inventories, vanilla tag lookup |
 | Content extension | `customitem`, `customblock`, `recipe`, `loot`, `advancement`, `enchantment`, `datapack`, `structure` | Custom content, data-pack files, structures, generation-facing features |
 | Ecosystem integration | `service`, `integration`, `messaging`, `region` | Cross-plugin providers, external resources, plugin messaging, region protection |
-| Low-level presentation | `packet`, `component`, `registry`, `performance`, `gamerule`, `nbs` | Network packets, components, registries, performance snapshots, game rules, NBS parsing |
+| Low-level presentation | `packet`, [`component`](/en/api/components), `registry`, `performance`, `gamerule`, `nbs` | Network packets, components, registries, performance snapshots, game rules, NBS parsing |
 
 ## PluginContext Service Matrix
 
@@ -85,7 +87,7 @@ Fand API can be read in layers:
 | Tab Lists | `context.tabLists()` | Per-viewer player-list visibility, sorting, and entries |
 | Maps | `context.maps()` | Map renderers, cursors, per-player rendering |
 | Plugin Messaging | `context.pluginMessaging()` | Standard plugin message channels |
-| Custom Items | `context.customItems()` | Register custom item types and base-item bindings |
+| Custom Items | `context.customItems()` | Register custom item types, item templates, and base-item bindings |
 | Custom Blocks | `context.customBlocks()` | Register custom block types, listeners, item bindings |
 | Recipes | `context.recipes()` | Register and remove recipes |
 | Loot Tables | `context.lootTables()` | Loot tables in the plugin namespace |
@@ -186,7 +188,19 @@ public final class ExamplePlugin implements Plugin {
 }
 ```
 
-## Maven Coordinates
+## Dependency Configuration
+
+The official Gradle plugin version is `0.1.2`. It wires the API dependency and processes `fand-plugin.json`, so new plugin projects should prefer this setup.
+
+```kotlin
+plugins {
+    id("io.fand.plugin") version "0.1.2"
+}
+```
+
+For ordinary Java, Gradle, or Maven projects, depend on `fand-api` directly. The examples below show Gradle Kotlin DSL, Gradle Groovy DSL, and Maven POM syntax.
+
+### Gradle Kotlin DSL
 
 ```kotlin
 repositories {
@@ -194,8 +208,42 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.fand:fand-api:latest.release")
+    compileOnly("io.fand:fand-api:0.1.2")
 }
 ```
 
-Real plugin projects should prefer the official Gradle plugin because it wires the API dependency and processes `fand-plugin.json`.
+### Gradle Groovy DSL
+
+```groovy
+repositories {
+    maven {
+        url = uri("https://repo.fandmc.cn/repository/maven-public/")
+    }
+}
+
+dependencies {
+    compileOnly "io.fand:fand-api:0.1.2"
+}
+```
+
+### Maven POM
+
+Maven projects should use a fixed version so builds do not silently resolve a different API. This example uses `0.1.2`.
+
+```xml
+<repositories>
+    <repository>
+        <id>fandmc</id>
+        <url>https://repo.fandmc.cn/repository/maven-public/</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>io.fand</groupId>
+        <artifactId>fand-api</artifactId>
+        <version>0.1.2</version>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+```

@@ -173,6 +173,7 @@ package com.example;
 
 import io.fand.api.entity.Player;
 import io.fand.api.gui.Gui;
+import io.fand.api.item.ItemKey;
 import io.fand.api.item.ItemStack;
 import io.fand.api.item.ItemTypes;
 import io.fand.api.plugin.PluginContext;
@@ -201,9 +202,9 @@ public final class WarpMenu {
 
                 var builder = Gui.chest(6, Component.text("Warps"))
                         .page(0, PAGE_SIZE, currentPage, warps, index -> icon(warps.get(index)))
-                        .button(45, named("minecraft:arrow", "Previous"), click -> open(click.player(), currentPage - 1))
-                        .button(49, named("minecraft:barrier", "Close"), click -> click.view().close())
-                        .button(53, named("minecraft:arrow", "Next"), click -> open(click.player(), currentPage + 1))
+                        .button(45, named(ItemKey.ARROW, "Previous"), click -> open(click.player(), currentPage - 1))
+                        .button(49, named(ItemKey.BARRIER, "Close"), click -> click.view().close())
+                        .button(53, named(ItemKey.ARROW, "Next"), click -> open(click.player(), currentPage + 1))
                         .onClose(close -> context.logger().debug("{} closed warp menu", close.player().name()));
 
                 for (int slot = 0; slot < PAGE_SIZE; slot++) {
@@ -232,11 +233,11 @@ public final class WarpMenu {
     }
 
     private ItemStack icon(Warp warp) {
-        return named("minecraft:ender_pearl", warp.name());
+        return named(ItemKey.ENDER_PEARL, warp.name());
     }
 
-    private ItemStack named(String item, String name) {
-        return new ItemStack(ItemTypes.of(item), 1).withCustomName(Component.text(name));
+    private ItemStack named(ItemKey item, String name) {
+        return ItemTypes.of(item).one().withCustomName(Component.text(name));
     }
 
     private record Warp(String name, Location location) {

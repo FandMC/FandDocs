@@ -12,12 +12,12 @@ The generated `PacketType` enum includes protocol phase, direction, Minecraft pa
 ```java
 import io.fand.api.packet.PacketDirection;
 import io.fand.api.packet.PacketProtocol;
-import net.kyori.adventure.key.Key;
+import io.fand.api.packet.PacketType;
 
 var type = context.packets().type(
         PacketProtocol.PLAY,
         PacketDirection.CLIENTBOUND,
-        Key.key("minecraft:system_chat"));
+        PacketType.PLAY_CLIENTBOUND_SYSTEM_CHAT.key());
 ```
 
 In common cases, use generated constants directly:

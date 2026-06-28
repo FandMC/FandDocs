@@ -1,0 +1,21 @@
+::selection {
+  color: #0b1220;
+  background: rgba(50, 190, 160, 0.32);
+}
+
+.vp-doc [class*='language-'] ::selection,
+code::selection {
+  color: #09111f;
+  background: rgba(92, 121, 255, 0.28);
+}
+
+.dark ::selection {
+  color: #f8fbff;
+  background: rgba(56, 217, 183, 0.36);
+}
+
+.dark .vp-doc [class*='language-'] ::selection,
+.dark code::selection {
+  color: #f8fbff;
+  background: rgba(126, 151, 255, 0.34);
+}

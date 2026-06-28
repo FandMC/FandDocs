@@ -3,24 +3,28 @@
 `Block` 是某个 `World` 中一个整数坐标位置的轻量句柄。它不是方块状态快照：`type()`、`fluidState()`、`stateProperties()`、`blockEntity()` 等读取的是当前位置的实时状态，`setType(...)`、`setStateProperty(...)`、`setFluid(...)`、`breakNaturally(...)` 会修改世界。
 
 ```java
+import io.fand.api.block.BlockKey;
+import io.fand.api.block.BlockTypes;
+
 var block = player.world().blockAt(
         player.location().blockX(),
         player.location().blockY() - 1,
         player.location().blockZ());
 
-if (block.type().key().asString().equals("minecraft:grass_block")) {
-    block.setType(BlockTypes.of("minecraft:gold_block"));
+if (block.type().key().equals(BlockKey.GRASS_BLOCK.key())) {
+    block.setType(BlockTypes.of(BlockKey.GOLD_BLOCK));
 }
 ```
 
 ## Block 和 BlockType
 
-`BlockType` 是注册表里的方块类型，例如 `minecraft:stone`。`Block` 是世界里的一个位置。多个 `Block` 句柄可以指向同一位置，读取时才会访问当前世界状态。
+`BlockType` 是注册表里的方块类型。固定 vanilla 方块应优先使用数据生成出来的 `BlockKey`，例如 `BlockKey.STONE`、`BlockKey.GRASS_BLOCK`。只有配置文件、玩家输入、外部数据这类运行时字符串，才需要先解析成 `Key` 再查询。
 
 ```java
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 
-var stone = BlockTypes.of("minecraft:stone");
+var stone = BlockTypes.of(BlockKey.STONE);
 var block = world.blockAt(0, 64, 0);
 
 block.setType(stone);
@@ -29,7 +33,7 @@ block.setType(stone);
 如果只是查询类型是否存在，可以使用 `BlockTypes.find(...)`：
 
 ```java
-BlockTypes.find(Key.key("minecraft:deepslate"))
+BlockTypes.find(BlockKey.DEEPSLATE)
         .ifPresent(type -> context.logger().info("found {}", type.key()));
 ```
 
@@ -42,7 +46,7 @@ var clicked = event.block();
 var above = clicked.relative(BlockFace.UP);
 
 if (above.air()) {
-    above.setType(BlockTypes.of("minecraft:torch"));
+    above.setType(BlockTypes.of(BlockKey.TORCH));
 }
 ```
 
@@ -153,6 +157,7 @@ Fand 把 `Block` 设计成位置句柄，而不是一次性快照，是为了让
 ## 最佳实践
 
 - 单点修改用 `block.setType(...)`，大范围修改用 `world.setBlocks(...)`、`fillBlocks(...)` 或 `replaceBlocks(...)`。
+- 固定 vanilla 方块使用数据生成的 `BlockKey`，不要在示例和业务代码里手写 `"minecraft:..."` 方块 id。
 - 保存方块引用时只保存 world key 和坐标；需要时重新 `world.blockAt(...)`。
 - 修改 block-state 属性前先检查 `stateProperties()` 或处理 `false` 返回值。
 - 方块组件只保存插件自己的持久状态，不要把它当作替代 vanilla block entity 的通用数据库。
@@ -164,6 +169,7 @@ Fand 把 `Block` 设计成位置句柄，而不是一次性快照，是为了让
 - `BlockType.physics()` 是默认状态，`Block.physics()` 才是当前位置实时状态。
 - `item(slot, item)` 那种 GUI 语义和方块无关；真实方块修改要走 `Block` 或 `World` API。
 - `setStateProperty` 返回 `false` 不是异常，通常表示属性名或值不适用于当前方块。
+- 固定方块直接写 `"minecraft:<id>"` 这类字符串，绕过了 Fand 的数据生成 key，也失去编译期检查。
 - 大范围循环 `setType` 会造成 tick 压力，应该使用批量 API 并限制每 tick 修改数量。
 
 ## 综合示例：保护区域内替换方块并保留掉落
@@ -174,6 +180,7 @@ Fand 把 `Block` 设计成位置句柄，而不是一次性快照，是为了让
 package com.example;
 
 import io.fand.api.block.Block;
+import io.fand.api.block.BlockKey;
 import io.fand.api.block.BlockTypes;
 import io.fand.api.entity.Player;
 import io.fand.api.item.ItemStack;
@@ -199,7 +206,7 @@ public final class BlockTools {
         }
 
         var drops = block.drops(tool);
-        if (!block.setType(BlockTypes.of("minecraft:glass"))) {
+        if (!block.setType(BlockTypes.of(BlockKey.GLASS))) {
             player.sendMessage(net.kyori.adventure.text.Component.text("Block change failed"));
             return;
         }

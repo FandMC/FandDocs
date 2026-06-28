@@ -12,12 +12,12 @@
 ```java
 import io.fand.api.packet.PacketDirection;
 import io.fand.api.packet.PacketProtocol;
-import net.kyori.adventure.key.Key;
+import io.fand.api.packet.PacketType;
 
 var type = context.packets().type(
         PacketProtocol.PLAY,
         PacketDirection.CLIENTBOUND,
-        Key.key("minecraft:system_chat"));
+        PacketType.PLAY_CLIENTBOUND_SYSTEM_CHAT.key());
 ```
 
 常用情况下可以直接使用生成常量：

@@ -16,7 +16,7 @@ repositories {
 
 ```kotlin
 plugins {
-    id("io.fand.plugin") version "latest.release"
+    id("io.fand.plugin") version "0.1.2"
 }
 
 fandPlugin {

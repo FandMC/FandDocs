@@ -1,6 +1,6 @@
 # 事件
 
-事件通过 `EventBus` 派发。事件总线是线程安全的，但不会自动切换线程：监听器运行在触发事件的线程上。玩家、实体、世界、库存等主线程状态只能在主线程安全访问；如果监听器来自异步事件，需要用调度器跳回主线程。
+事件通过 `EventBus` 派发。事件总线是线程安全的，但不会自动切换线程：监听器运行在触发事件的线程上。玩家、实体、世界、背包和容器等主线程状态只能在主线程安全访问；如果监听器来自异步事件，需要用调度器跳回主线程。
 
 ```java
 context.events().subscribe(PlayerJoinEvent.class, event -> {
@@ -81,7 +81,7 @@ if (event instanceof Cancellable cancellable && !cancellable.cancelled()) {
 
 ## 异步事件与主线程
 
-事件总线不会替你切线程。处理登录、网络、外部服务回调等异步事件时，不要直接修改世界、实体或库存。
+事件总线不会替你切线程。处理登录、网络、外部服务回调等异步事件时，不要直接修改世界、实体、背包或容器。
 
 ```java
 context.events().subscribe(AsyncPlayerPreLoginEvent.class, event -> {
@@ -116,7 +116,7 @@ Fand 的事件总线只负责“按顺序派发事件”，不负责替插件猜
 ## 最佳实践
 
 - 监听器保持短小；耗时 I/O、数据库和网络请求放到 scheduler 异步阶段。
-- 修改世界、实体、库存等状态前确认监听器运行在主线程；不确定时用 `context.scheduler().runMain(...)` 应用结果。
+- 修改世界、实体、背包或容器等状态前确认监听器运行在主线程；不确定时用 `context.scheduler().runMain(...)` 应用结果。
 - 会修改事件结果的监听器使用 `LOWEST` 到 `HIGHEST`，日志、统计和同步状态使用 `OBSERVER`。
 - 临时监听器保存 `EventSubscription`，业务结束时主动 `close()`。
 - 自定义事件如果在高频路径触发，先用 `hasListeners` 判断是否需要构造。

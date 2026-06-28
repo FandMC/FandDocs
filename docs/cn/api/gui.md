@@ -1,8 +1,8 @@
 # GUI
 
-`GuiService` 提供轻量库存 GUI。`Gui` 是不可变模板，定义容器类型、标题、slot 物品、slot handler、保护槽和关闭回调；`GuiView` 是某个玩家当前打开的实例，保存玩家、真实 inventory、视图状态和刷新/关闭能力。
+`GuiService` 提供轻量容器菜单。`Gui` 是不可变模板，定义容器类型、标题、槽位物品、槽位点击处理器、保护槽和关闭回调；`GuiView` 是某个玩家当前打开的菜单实例，保存玩家、底层容器、视图状态和刷新/关闭能力。
 
-GUI handler 由库存点击事件路由而来，在服务端线程执行，可以安全读取和修改世界、实体、库存等服务端状态。耗时 I/O 仍然应该放到异步任务里做，完成后再回主线程打开或刷新 GUI。
+GUI 点击处理器由容器点击事件路由而来，在服务端线程执行，可以安全读取和修改世界、实体、背包等服务端状态。耗时 I/O 仍然应该放到异步任务里做，完成后再回服务端线程打开或刷新菜单。
 
 ## 基本结构
 
@@ -24,7 +24,7 @@ var gui = Gui.chest(3, Component.text("Example Menu"))
 context.guis().open(player, gui);
 ```
 
-`button(slot, item, handler)` 会同时设置物品、handler，并把该 slot 标记为 protected。protected slot 会取消玩家点击，避免按钮物品被拿走。只设置 `handler(slot, ...)` 也会触发点击处理并取消该 slot；只设置 `protectedSlot(slot)` 则只保护物品，不执行业务逻辑。
+`button(slot, item, handler)` 会同时设置物品、点击处理器，并把这个槽位标记为受保护。受保护槽会取消玩家点击，避免按钮物品被拿走。只设置 `handler(slot, ...)` 也会触发点击处理并取消该槽位；只设置 `protectedSlot(slot)` 则只保护物品，不执行业务逻辑。
 
 ## 容器类型和尺寸
 
@@ -58,13 +58,13 @@ var gui = Gui.builder(inventoryType, size, title)
 
 `protectedSlot(slot)` 只保护槽位，不执行 handler。适合边框、背景、占位物品。
 
-`handler(slot, handler)` 安装点击处理器。当前运行时会取消注册了 handler 的 GUI 槽位点击，避免 vanilla 移动物品和插件逻辑同时发生。
+`handler(slot, handler)` 安装点击处理器。当前运行时会取消注册了点击处理器的 GUI 槽位点击，避免原版移动物品和插件逻辑同时发生。
 
 `button(slot, item, handler)` 是最常用的组合：展示物品、安装 handler、保护槽位。
 
 ## 点击上下文
 
-handler 会收到 `GuiClick`，里面包含当前 view、玩家、GUI inventory、slot、点击类型、动作、当前物品和光标物品。
+点击处理器会收到 `GuiClick`，里面包含当前菜单视图、玩家、GUI 容器、槽位、点击类型、动作、当前槽位物品和鼠标上拿着的物品。
 
 ```java
 .button(13, rewardItem, click -> {
@@ -74,11 +74,11 @@ handler 会收到 `GuiClick`，里面包含当前 view、玩家、GUI inventory�
 })
 ```
 
-`GuiClick.currentItem()` 和 `GuiClick.cursorItem()` 是点击发生时的快照。需要修改光标物品时，用 `click.view().setCursorItem(item)`。
+`GuiClick.currentItem()` 和 `GuiClick.cursorItem()` 是点击发生时的快照。需要修改玩家鼠标上拿着的物品时，用 `click.view().setCursorItem(item)`。
 
 ## 分页
 
-`page(startSlot, pageSize, page, items, renderer)` 会把集合中的一页渲染到连续 slot，并保护这些 slot。renderer 接收的是集合中的绝对 index，不是当前页内的局部 index。
+`page(startSlot, pageSize, page, items, renderer)` 会把集合中的一页渲染到连续槽位，并保护这些槽位。renderer 收到的是集合中的绝对下标，不是当前页内的局部下标。
 
 ```java
 var gui = Gui.chest(6, Component.text("Rewards"))
@@ -88,7 +88,7 @@ var gui = Gui.chest(6, Component.text("Rewards"))
         .build();
 ```
 
-如果 `page` 超出数据范围，未填满的 slot 会自动放 `ItemStack.EMPTY` 并保持 protected，适合固定布局。
+如果 `page` 超出数据范围，未填满的槽位会自动放 `ItemStack.EMPTY` 并保持受保护状态，适合固定布局。
 
 ## GuiView 状态
 
@@ -110,7 +110,7 @@ view.state("page", nextPage);
 view.reopen();
 ```
 
-`reopen()` 会重新打开当前 view 使用的 inventory，并重新应用 GUI 内容和属性。需要完全重建页面布局时，更常见的方式是用新的 `Gui` 模板再次 `open(player, gui)`。
+`reopen()` 会重新打开当前视图使用的容器，并重新应用 GUI 内容和属性。需要完全重建页面布局时，更常见的方式是用新的 `Gui` 模板再次 `open(player, gui)`。
 
 ## 容器属性
 
@@ -138,31 +138,31 @@ for (var view : context.guis().openViews(gui)) {
 }
 ```
 
-在插件作用域里，`openView(player)` 和 `openViews(gui)` 只返回当前插件追踪到的 GUI 视图。玩家手动关闭 inventory、插件调用 `view.close()`、或打开新的 GUI 替换旧 GUI 时，close handler 都会按视图生命周期触发。
+在插件作用域里，`openView(player)` 和 `openViews(gui)` 只返回当前插件追踪到的 GUI 视图。玩家手动关闭容器菜单、插件调用 `view.close()`、或打开新的 GUI 替换旧 GUI 时，关闭回调都会按视图生命周期触发。
 
 ## 为什么这样设计
 
-Fand 把 `Gui` 和 `GuiView` 分开，是为了区分“可复用的界面模板”和“某个玩家当前打开的实例”。同一个菜单结构可以被多个玩家打开，每个玩家的页码、临时状态、cursor item 和关闭行为都应互不影响。
+Fand 把 `Gui` 和 `GuiView` 分开，是为了区分“可复用的界面模板”和“某个玩家当前打开的实例”。同一个菜单结构可以被多个玩家打开，每个玩家的页码、临时状态、鼠标物品和关闭行为都应互不影响。
 
-slot handler 绑定在槽位上，而不是让插件直接监听底层 inventory packet，是为了把常见 GUI 交互留在稳定 API 层。插件只需要处理 `GuiClick`，运行时负责把底层容器点击转成 viewer、slot、button、cursor、current item 等上下文。
+槽位点击处理器绑定在槽位上，而不是让插件直接监听底层容器数据包，是为了把常见 GUI 交互留在稳定 API 层。插件只需要处理 `GuiClick`，运行时负责把底层容器点击转成玩家、槽位、按钮、鼠标物品、当前槽位物品等上下文。
 
-分页和 `state` 是轻量工具，不是完整 UI 框架。它们解决最常见的菜单问题：一组 item 怎么铺到多个 slot、玩家当前查看哪一页、点击后怎样刷新当前 view。复杂应用仍然可以在插件自己的模型里维护状态。
+分页和 `state` 是轻量工具，不是完整 UI 框架。它们解决最常见的菜单问题：一组物品怎么铺到多个槽位、玩家当前查看哪一页、点击后怎样刷新当前视图。复杂应用仍然可以在插件自己的模型里维护状态。
 
 ## 最佳实践
 
 - GUI 模板尽量保持不可变，把每个玩家的页码、过滤器、选择项放进 `GuiView.state` 或你的会话对象。
-- handler 里只做短逻辑。数据库、HTTP、文件读取放到 `runAsync`，拿到结果后用 `runMain` 打开或刷新 GUI。
+- 点击处理器里只做短逻辑。数据库、HTTP、文件读取放到 `runAsync`，拿到结果后用 `runMain` 打开或刷新 GUI。
 - 对按钮、边框和分页区域使用 `button` 或 `protectedSlot`，避免玩家取走占位物品。
 - 重建页面时优先写一个 `openXxxMenu(player, page)` 方法，点击上一页/下一页时重新调用它。
-- close handler 中避免无条件立刻重新打开同一个 GUI，否则玩家可能无法正常退出菜单。
+- 关闭回调中避免无条件立刻重新打开同一个 GUI，否则玩家可能无法正常退出菜单。
 
 ## 常见坑
 
 - `item(slot, item)` 不会保护 slot；只展示不保护时，玩家可以把物品拿走。
-- `page` 的 renderer 参数是集合绝对 index。不要再加 `page * pageSize`。
+- `page` 的 renderer 参数是集合绝对下标。不要再加 `page * pageSize`。
 - `GuiView.state(String)` 返回 `Optional<Object>`，读取时需要自己 cast 到目标类型。
 - `Gui` 是模板，不是玩家会话。不要把玩家状态写进共享字段后复用同一个模板。
-- `close()` 会触发 close handler。若 close handler 内又调用 `open`，要确保这是你真正想要的流程。
+- `close()` 会触发关闭回调。若关闭回调内又调用 `open`，要确保这是你真正想要的流程。
 
 ## 综合示例：分页传送菜单
 
@@ -172,6 +172,7 @@ slot handler 绑定在槽位上，而不是让插件直接监听底层 inventory
 package com.example;
 
 import io.fand.api.item.ItemStack;
+import io.fand.api.item.ItemKey;
 import io.fand.api.item.ItemTypes;
 import io.fand.api.plugin.PluginContext;
 import io.fand.api.entity.Player;
@@ -201,9 +202,9 @@ public final class WarpMenu {
 
                 var builder = Gui.chest(6, Component.text("Warps"))
                         .page(0, PAGE_SIZE, currentPage, warps, index -> icon(warps.get(index)))
-                        .button(45, named("minecraft:arrow", "Previous"), click -> open(click.player(), currentPage - 1))
-                        .button(49, named("minecraft:barrier", "Close"), click -> click.view().close())
-                        .button(53, named("minecraft:arrow", "Next"), click -> open(click.player(), currentPage + 1))
+                        .button(45, named(ItemKey.ARROW, "Previous"), click -> open(click.player(), currentPage - 1))
+                        .button(49, named(ItemKey.BARRIER, "Close"), click -> click.view().close())
+                        .button(53, named(ItemKey.ARROW, "Next"), click -> open(click.player(), currentPage + 1))
                         .onClose(close -> context.logger().debug("{} closed warp menu", close.player().name()));
 
                 for (int slot = 0; slot < PAGE_SIZE; slot++) {
@@ -232,11 +233,11 @@ public final class WarpMenu {
     }
 
     private ItemStack icon(Warp warp) {
-        return named("minecraft:ender_pearl", warp.name());
+        return named(ItemKey.ENDER_PEARL, warp.name());
     }
 
-    private ItemStack named(String item, String name) {
-        return new ItemStack(ItemTypes.of(item), 1).withCustomName(Component.text(name));
+    private ItemStack named(ItemKey item, String name) {
+        return ItemTypes.of(item).one().withCustomName(Component.text(name));
     }
 
     private record Warp(String name, Location location) {
