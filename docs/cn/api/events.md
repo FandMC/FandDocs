@@ -104,3 +104,78 @@ context.events()
 ```
 
 热点路径可以先调用 `hasListeners`，避免在没有监听器时构造昂贵事件对象。
+
+## 为什么这样设计
+
+Fand 的事件总线只负责“按顺序派发事件”，不负责替插件猜线程模型。事件来源可能是服务端 tick、网络线程、外部服务回调或插件自己的 executor；如果事件总线自动切线程，监听器反而很难判断当前代码和事件来源之间的顺序关系。
+
+优先级从 `LOWEST` 到 `OBSERVER` 也是为了让插件之间形成可预测协作：前面的监听器可以准备默认值或提前拦截，中间的监听器处理主要逻辑，后面的监听器覆盖或修正，`OBSERVER` 只观察最终状态。
+
+`hasListeners` 存在是为了热路径性能。服务端内部或大型插件在构造事件对象前可以先判断是否有人监听，避免每 tick 分配复杂 payload。
+
+## 最佳实践
+
+- 监听器保持短小；耗时 I/O、数据库和网络请求放到 scheduler 异步阶段。
+- 修改世界、实体、库存等状态前确认监听器运行在主线程；不确定时用 `context.scheduler().runMain(...)` 应用结果。
+- 会修改事件结果的监听器使用 `LOWEST` 到 `HIGHEST`，日志、统计和同步状态使用 `OBSERVER`。
+- 临时监听器保存 `EventSubscription`，业务结束时主动 `close()`。
+- 自定义事件如果在高频路径触发，先用 `hasListeners` 判断是否需要构造。
+- 监听器异常会被收集并通过 `EventDispatchException` 抛出；不要依赖“抛异常中断后续监听器”的行为。
+
+## 常见坑
+
+- 已取消的事件仍会派发给后续监听器，后续监听器也可以修改取消状态。
+- `OBSERVER` 只是约定上的最终观察阶段，不是强制只读；在这里改事件会让其它插件很难预测结果。
+- `fireAsync` 会在你传入的 executor 上顺序执行监听器，但监听器里的世界状态访问仍然要遵守线程边界。
+- `registerListener` 返回的是一组方法的整体 subscription，不能单独注销某一个 `@Subscribe` 方法。
+- 在事件对象里长期保存可变 `Player`、`Entity` 或事件 payload，容易跨线程或跨生命周期使用到过期状态。
+
+## 综合示例：加入/退出提示和异步审计
+
+下面的例子把玩家加入/退出提示放在主线程事件里处理，把审计日志丢到异步任务。审计阶段只保存 UUID 和名称字符串，不把事件对象带到后台线程。
+
+```java
+package com.example;
+
+import io.fand.api.event.EventPriority;
+import io.fand.api.event.Listener;
+import io.fand.api.event.Subscribe;
+import io.fand.api.event.player.PlayerJoinEvent;
+import io.fand.api.event.player.PlayerQuitEvent;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    @Override
+    public void onEnable(PluginContext context) {
+        context.events().registerListener(new JoinQuitListener(context));
+    }
+
+    private static final class JoinQuitListener implements Listener {
+        private final PluginContext context;
+
+        private JoinQuitListener(PluginContext context) {
+            this.context = context;
+        }
+
+        @Subscribe(priority = EventPriority.HIGH)
+        void onJoin(PlayerJoinEvent event) {
+            var player = event.player();
+            event.setMessage(Component.text("+ " + player.name()));
+            player.sendMessage(Component.text("Welcome, " + player.name()));
+
+            var playerId = player.uniqueId();
+            var name = player.name();
+            context.scheduler().runAsync(() ->
+                    context.logger().info("Audit join {} ({})", name, playerId));
+        }
+
+        @Subscribe(priority = EventPriority.OBSERVER)
+        void onQuit(PlayerQuitEvent event) {
+            var player = event.player();
+            context.logger().info("Quit reason for {}: {}", player.name(), event.reason());
+        }
+    }
+}
+```

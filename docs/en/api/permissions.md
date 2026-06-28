@@ -128,9 +128,88 @@ If permissions are a static part of your plugin, declare them in `fand-plugin.js
 }
 ```
 
-## Guidelines
+## Design Philosophy
+
+Fand keeps baseline permission checks and ecosystem metadata queries in one `PermissionService` so it can cover both plugin feature gates and Vault/LuckPerms-style chat prefixes, groups, inheritance, and contextual metadata.
+
+Permission nodes remain the most stable way to make gameplay decisions. Group, prefix, suffix, and metadata values are better for display, compatibility, or cross-plugin reads because they may come from different providers with different inheritance models.
+
+`PermissionContext` uses normalized key/value pairs instead of hardcoding world, region, or server fields. Permission bridges can support more context dimensions, and ordinary plugins can express their own scenarios through the same API.
+
+## Best Practices
 
 - Put static permissions in the descriptor or register them during startup.
 - Use attachments for temporary permissions, and close them when no longer needed.
 - Meta/context lookups are best for display and compatibility, not as the only source of gameplay state.
 - Management commands and dangerous operations should default to `OPERATOR` or `FALSE`.
+- Prefix every public permission node with your plugin id, such as `example.reload` or `example.admin`.
+- For context-aware meta queries, explicitly put world, server, region, or other dimensions into `PermissionContext`.
+- Use prefix/suffix/group for UI display; check concrete permission nodes for dangerous operations.
+
+## Common Pitfalls
+
+- Checking permissions inside commands without registering nodes makes default policy invisible to management tools.
+- Treating primary group as a permanent identity source is fragile; it may vary by context or provider.
+- Forgetting to close attachments leaves temporary permissions active.
+- Wildcard, children, and attachment priority are resolved by the runtime permission implementation; plugins should not guess the full inheritance tree.
+- Meta/context values depend on the active provider and may be empty when no provider is installed.
+
+## Complete Example: Admin Tree and Temporary Debug Permission
+
+This example registers an admin permission tree and grants `example.debug.session` temporarily while a player is in a debug session.
+
+```java
+package com.example;
+
+import io.fand.api.entity.Player;
+import io.fand.api.permission.PermissionAttachment;
+import io.fand.api.permission.PermissionContext;
+import io.fand.api.permission.PermissionDefault;
+import io.fand.api.permission.PermissionDescriptor;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    private final Map<UUID, PermissionAttachment> debugSessions = new HashMap<>();
+
+    @Override
+    public void onEnable(PluginContext context) {
+        context.permissions().register(new PermissionDescriptor(
+                "example.admin",
+                PermissionDefault.OPERATOR,
+                Map.of(
+                        "example.reload", true,
+                        "example.debug.session", true)));
+    }
+
+    @Override
+    public void onDisable(PluginContext context) {
+        debugSessions.values().forEach(PermissionAttachment::close);
+        debugSessions.clear();
+    }
+
+    public void startDebugSession(PluginContext context, Player player) {
+        debugSessions.computeIfAbsent(player.uniqueId(), ignored ->
+                context.permissions().attach(player, "example.debug.session", true));
+
+        var permissionContext = PermissionContext.empty()
+                .with("world", player.world().key().asString());
+        var prefix = context.permissions()
+                .prefix(player, permissionContext)
+                .orElse("");
+
+        player.sendMessage(Component.text(prefix + "Debug session enabled"));
+    }
+
+    public void stopDebugSession(Player player) {
+        var attachment = debugSessions.remove(player.uniqueId());
+        if (attachment != null) {
+            attachment.close();
+        }
+    }
+}
+```

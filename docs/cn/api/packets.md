@@ -126,3 +126,62 @@ openScreen
 - 拦截器里不要做长耗时 I/O。
 - 替换 packet 时尽量保留原 view 中你不关心的字段。
 - packet view 和字段随 Minecraft 协议演进，升级服务端前要重新测试依赖底层字段的插件。
+
+## 为什么这样设计
+
+Packet API 是 Fand 的低层逃生口。GUI、BossBar、TabList、Scoreboard、Map 和 Placeholder 这类高层 API 更稳定，应该优先使用；只有当你需要协议级表现、兼容特定客户端功能、或做 per-viewer illusion 时，才直接碰 packet。
+
+`PacketView` 使用生成 metadata 暴露字段，是为了避免插件直接依赖混淆后的内部 packet 类。这样插件代码可以用公开字段名和 view 类型表达意图，运行时负责把 view 转换成当前服务端版本的实际 packet。
+
+builder 不会替你理解某个 vanilla packet 的完整协议。它只收集字段并交给运行时构造 view；如果缺少运行时转换所需字段，构造或发送阶段会失败。
+
+## 最佳实践
+
+- 先用 `fields()` 打印实际 packet 字段，再写读取和替换逻辑。
+- 修改拦截到的 packet 时，用 `view.with(...)` 或复制原字段，只改你关心的字段。
+- 从零构造 packet 时，优先使用 `PacketHelpers`，再补充缺失字段。
+- fake block/entity 只用于单个 viewer 的表现层，不要把它当成世界状态。
+- 拦截器里只做轻量判断；复杂处理放到异步任务或高层状态机。
+- 升级 Minecraft/Fand 版本后，重新测试依赖字段名和底层 packet 结构的插件。
+
+## 常见坑
+
+- 直接构造 packet 时漏掉必需字段，导致运行时无法转换。
+- 把 fake block 当成真实方块：服务端世界不会改变，玩家重新同步或交互后可能看到真实状态。
+- `fakeEntity` 需要 clientbound spawn packet view；serverbound 或无关 packet 不适合用来生成假实体。
+- packet 字段不是公共业务模型，协议升级时可能变化。
+- 拦截器抛异常会影响 packet 派发路径；必要时自己捕获并记录。
+
+## 综合示例：动作栏提示和系统聊天审计
+
+下面的例子用 helper/builder 发送动作栏文本，并拦截系统聊天包打印字段。真实插件可以先观察字段，再决定是否替换或取消。
+
+```java
+package com.example;
+
+import io.fand.api.entity.Player;
+import io.fand.api.packet.PacketType;
+import io.fand.api.packet.view.ClientboundSystemChatPacketView;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    @Override
+    public void onEnable(PluginContext context) {
+        context.packets().intercept(
+                PacketType.PLAY_CLIENTBOUND_SYSTEM_CHAT,
+                ClientboundSystemChatPacketView.class,
+                controller -> context.logger().debug(
+                        "system chat fields={}",
+                        controller.view().fields()));
+    }
+
+    public void sendSavedHint(PluginContext context, Player player) {
+        context.packets()
+                .builder(PacketType.PLAY_CLIENTBOUND_SET_ACTION_BAR_TEXT)
+                .field("text", Component.text("Saved"))
+                .send(player);
+    }
+}
+```

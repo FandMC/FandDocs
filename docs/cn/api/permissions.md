@@ -134,3 +134,88 @@ var group = context.permissions().primaryGroup(player, contextValues);
 - 临时权限使用 attachment，并在不需要时关闭。
 - meta/context 查询适合展示和兼容，不建议把它当作唯一业务状态来源。
 - 管理命令和危险操作默认使用 `OPERATOR` 或 `FALSE`。
+
+## 为什么这样设计
+
+Fand 把基础权限检查和生态 meta 查询放在同一个 `PermissionService` 里，是为了同时覆盖两类场景：插件自己的功能开关，以及 Vault/LuckPerms 风格的聊天前缀、组、继承和上下文信息。
+
+权限节点仍然是最稳定的业务判断方式。group、prefix、suffix 和 meta 更适合展示、兼容或跨插件读取，因为它们可能来自不同 provider，具体继承模型也可能不同。
+
+`PermissionContext` 不把 world、region、server 写死成固定字段，而是使用标准化 key/value。这样权限桥接插件可以支持更多上下文维度，普通插件也能用相同 API 表达自己的场景。
+
+## 最佳实践
+
+- 所有公开权限节点都使用插件 id 前缀，例如 `example.reload`、`example.admin`。
+- 静态权限在 `fand-plugin.json` 或 `onEnable` 中注册，让管理工具能发现默认值。
+- 临时状态使用 `PermissionAttachment`，例如调试模式、活动 buff、会话内临时授权。
+- 使用 context 查询 meta 时，把 world、server、region 等值显式写入 `PermissionContext`。
+- UI 展示可以读取 prefix/suffix/group；真正危险操作仍然检查具体权限节点。
+- attachment 生命周期跟业务对象绑定，结束时 `close()`，不要让临时权限无限期存在。
+
+## 常见坑
+
+- 只在命令执行时检查权限，但没有注册权限节点，会让管理工具和服主看不到默认策略。
+- 把 primary group 当作数据库里的唯一身份来源；它可能随上下文或 provider 改变。
+- 忘记关闭 attachment，会让临时权限继续影响玩家。
+- wildcard、children、attachment 的优先级由运行时权限实现解析；插件不要自己猜完整继承树。
+- meta/context 查询结果取决于当前权限 provider，没有 provider 时可能为空。
+
+## 综合示例：管理权限和临时调试权限
+
+下面的例子注册一个管理权限树，并在玩家进入调试会话时临时授予 `example.debug.session`。
+
+```java
+package com.example;
+
+import io.fand.api.entity.Player;
+import io.fand.api.permission.PermissionAttachment;
+import io.fand.api.permission.PermissionContext;
+import io.fand.api.permission.PermissionDefault;
+import io.fand.api.permission.PermissionDescriptor;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    private final Map<UUID, PermissionAttachment> debugSessions = new HashMap<>();
+
+    @Override
+    public void onEnable(PluginContext context) {
+        context.permissions().register(new PermissionDescriptor(
+                "example.admin",
+                PermissionDefault.OPERATOR,
+                Map.of(
+                        "example.reload", true,
+                        "example.debug.session", true)));
+    }
+
+    @Override
+    public void onDisable(PluginContext context) {
+        debugSessions.values().forEach(PermissionAttachment::close);
+        debugSessions.clear();
+    }
+
+    public void startDebugSession(PluginContext context, Player player) {
+        debugSessions.computeIfAbsent(player.uniqueId(), ignored ->
+                context.permissions().attach(player, "example.debug.session", true));
+
+        var permissionContext = PermissionContext.empty()
+                .with("world", player.world().key().asString());
+        var prefix = context.permissions()
+                .prefix(player, permissionContext)
+                .orElse("");
+
+        player.sendMessage(Component.text(prefix + "Debug session enabled"));
+    }
+
+    public void stopDebugSession(Player player) {
+        var attachment = debugSessions.remove(player.uniqueId());
+        if (attachment != null) {
+            attachment.close();
+        }
+    }
+}
+```

@@ -121,9 +121,77 @@ view.setLocked(true);
 
 For temporary presentation, prefer renderer output and per-player render/update. Use state methods when you intentionally want to modify the real map data.
 
-## Guidelines
+## Design Philosophy
+
+BossBar, TabList, and Map APIs all control what players see, but their lifecycles are different. A boss bar is a keyed UI resource shown to one or more players. TabList is per-viewer player-list state. A map renderer controls pixel output while underlying map state remains separate.
+
+TabList takes `viewer` first to make "who sees what" explicit. The same real player, remote player, or virtual row can have different latency, ordering, display name, and visibility for different viewers.
+
+Map APIs separate renderer output from center, scale, tracking, locked state, and cursors because renderer output is closer to temporary presentation, while the latter are underlying map state. Plugin unload can clean up renderers, but it cannot pretend persistent map state was never changed.
+
+## Best Practices
 
 - Boss bars fit progress, short notices, and combat state; use Scoreboard or packet helpers for richer HUDs.
 - TabList is per-viewer; the same target can appear differently to different viewers.
 - Do not perform expensive lookups in map render loops; cache the data you need to draw.
 - Document APIs that persistently mutate world or map state for server owners.
+- Use keyed BossBars for long-lived state and `send(..., duration)` for short notices.
+- Use stable UUIDs for virtual TabList rows and update the same row with `update`.
+- Prefer renderer output and per-player render/update for temporary map presentation.
+
+## Common Pitfalls
+
+- BossBar progress should stay within the range Adventure accepts; business code usually clamps it to `0.0f` through `1.0f`.
+- TabList operations are per-viewer. Adding a virtual row for one viewer does not show it to everyone.
+- `showOnly` changes real player-list visibility and should be restored when the arena or session ends.
+- Map center, scale, tracking, locked state, and cursors are underlying map state and are not automatically rolled back on plugin unload.
+- Maps are 128x128 canvases; out-of-bounds or expensive per-pixel work can make rendering slow.
+
+## Complete Example: Countdown BossBar and Lobby Tab Row
+
+This example shows a countdown boss bar and adds a virtual lobby-status row to one viewer's tab list.
+
+```java
+package com.example;
+
+import io.fand.api.entity.GameMode;
+import io.fand.api.entity.Player;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import io.fand.api.tablist.TabListEntry;
+import java.util.UUID;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    private static final UUID LOBBY_ROW_ID = UUID.fromString("00000000-0000-0000-0000-000000000101");
+
+    @Override
+    public void onEnable(PluginContext context) {
+        context.bossBars().register(
+                Key.key("example:countdown"),
+                Component.text("Starting soon"),
+                1.0f,
+                BossBar.Color.GREEN,
+                BossBar.Overlay.PROGRESS);
+    }
+
+    public void showLobbyState(PluginContext context, Player viewer, int secondsLeft, int online) {
+        context.bossBars().bar(Key.key("example:countdown")).ifPresent(bar -> {
+            bar.show(viewer);
+            bar.setTitle(Component.text("Starting in " + secondsLeft + "s"));
+            bar.setProgress(Math.max(0.0f, Math.min(1.0f, secondsLeft / 30.0f)));
+        });
+
+        var entry = TabListEntry.builder(LOBBY_ROW_ID, "Lobby")
+                .displayName(Component.text("Lobby online: " + online))
+                .gameMode(GameMode.SURVIVAL)
+                .latency(0)
+                .order(100)
+                .build();
+
+        context.tabLists().update(viewer, entry);
+    }
+}
+```

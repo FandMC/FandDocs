@@ -7,6 +7,20 @@ Fand 插件只依赖 `fand-api`。`fand-api` 是面向插件作者的稳定编�
 
 建议优先从 `PluginContext` 获取服务。它代表“当前插件”的生命周期作用域，命令、监听器、任务、服务 provider、GUI、BossBar、TabList 等资源都可以跟随插件禁用自动清理。只有在需要全服视图时，再使用 `Fand.server()`。
 
+## 为什么这样设计
+
+Fand API 有意采用和 Bukkit/Paper 不完全相同的风格。它更像现代 Java record/接口风格的领域 API：读取状态时优先使用 `player.location()`、`entity.uniqueId()`、`world.key()` 这类属性式方法；会修改状态、发送数据包或改变生命周期的操作才使用动词，例如 `teleport(...)`、`setVelocity(...)`、`register(...)`、`close()`。
+
+这样设计主要为了几件事：
+
+- **更少模板代码**：`location()` 比 `getLocation()` 更接近 Java record accessor，也和 `PluginDescriptor.id()`、`MapView.id()` 等 API 保持一致。
+- **区分读取和动作**：无前缀方法通常表示读取一个值或句柄，`set*` / 动词方法表示有副作用的操作。
+- **编译期 API 与运行时解耦**：插件只依赖 `fand-api`；具体行为由当前 Fand Server runtime 提供。API 里的兼容默认方法不是功能说明。
+- **插件作用域优先**：`context.xxx()` 返回的服务通常会帮插件追踪注册资源，降低卸载后残留命令、任务、BossBar、TabList 行等问题。
+- **明确线程边界**：异步阶段适合做 I/O 和计算；需要按 tick 顺序应用结果时，用 scheduler 切回服务端线程。
+
+从 Paper 迁移时，不要机械寻找 `getXxx()` 对应物。先判断自己是在读取状态、注册资源、修改世界，还是发送给某个 viewer 的表现效果，再选择对应的 Fand 服务。
+
 ## 两个核心入口
 
 | 入口 | 作用 | 使用场景 |
@@ -97,7 +111,7 @@ Fand API 可以按开发任务分成几层：
 | 性能 | `performance()`、`currentTick()` |
 | 广播 | `sendMessage(...)`、`broadcast(...)` |
 
-## 使用建议
+## 最佳实践
 
 - 生命周期相关注册放在 `onEnable`，释放外部资源放在 `onDisable`。
 - 优先使用 `context.xxx()`，除非明确需要全服查询或全局广播。
@@ -105,6 +119,72 @@ Fand API 可以按开发任务分成几层：
 - 异步任务不要直接操作主线程状态；用 `context.scheduler().runMain(...)` 回到服务端线程。
 - `ServiceRegistry` 适合做生态互通，不适合替代普通 Java 依赖注入。
 - 权限节点、命令、配置 key 建议统一使用插件 id 作为前缀。
+
+## 常见坑
+
+- 看到 `fand-api` 接口里的 default 返回值或占位异常，就误以为运行时没有实现；真实行为由 Fand Server 运行时提供。
+- 从 Paper 迁移时机械寻找 `getXxx()` 方法，忽略了 Fand 的属性式 accessor。
+- 把所有服务都从 `Fand.server()` 获取，导致插件作用域清理失效或资源归属不清。
+- 在异步任务或异步事件里直接操作未封装的世界/实体/库存对象。
+- 把 `ServiceRegistry` 当作插件内部对象容器，注册 DAO、配置对象或线程池。
+- 没有在 descriptor 或 `PermissionService` 注册公开权限节点，管理工具无法发现默认策略。
+
+## 综合示例：最小但完整的插件骨架
+
+下面的例子展示一个插件入口如何组合 descriptor、配置、权限、命令、事件和调度器。更复杂的 GUI、区域、packet、scoreboard 等能力可以按同样方式从 `PluginContext` 拆到独立组件。
+
+```java
+package com.example;
+
+import io.fand.api.command.CommandExecutor;
+import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandSpec;
+import io.fand.api.event.player.PlayerJoinEvent;
+import io.fand.api.permission.PermissionDefault;
+import io.fand.api.permission.PermissionDescriptor;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import java.util.List;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    @Override
+    public void onEnable(PluginContext context) {
+        context.logger().info("{} {}", context.descriptor().id(), context.descriptor().version());
+
+        var enabled = context.config().getBoolean("welcome.enabled", true);
+        var message = context.config().getString("welcome.message", "Welcome, {player}");
+
+        context.permissions().register(new PermissionDescriptor(
+                "example.reload",
+                PermissionDefault.OPERATOR));
+
+        context.commands().register(new ReloadCommand(context));
+
+        context.events().subscribe(PlayerJoinEvent.class, event -> {
+            if (enabled) {
+                event.player().sendMessage(Component.text(
+                        message.replace("{player}", event.player().name())));
+            }
+        });
+    }
+
+    @CommandSpec(label = "example", subcommands = {"reload"}, permission = "example.reload")
+    private static final class ReloadCommand implements CommandExecutor {
+        private final PluginContext context;
+
+        private ReloadCommand(PluginContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public void execute(CommandSender sender, String label, List<String> args) {
+            context.reloadConfig();
+            sender.sendMessage(Component.text("Example config reloaded"));
+        }
+    }
+}
+```
 
 ## Maven 坐标
 

@@ -88,9 +88,48 @@ task.cancel();
 - 如果一组修改必须按 tick 顺序发生，或者需要和其它主线程逻辑保持可预测顺序，把“应用结果”的阶段放进 `runMain`。
 - 会同步等待服务端线程结果的 API 不适合在大量异步任务中高频调用，否则可能把 worker 卡在等待主线程队列上。
 
-## 使用建议
+## 为什么这样设计
+
+Fand 把主线程任务、真实时间延迟、tick 延迟和异步任务分成不同方法，是为了让插件作者在调用点就表达清楚“这段逻辑依赖游戏 tick，还是依赖外部时间”。`Duration` 适合冷却、缓存刷新、外部超时；tick 方法适合游戏机制、动画、计分板刷新等和服务器 tick 同步的逻辑。
+
+`Task.cancel()` 是 best-effort：已经开始执行的任务可能会跑完，等待中或重复调度的任务会尽量停止。不要把 cancel 当作线程中断或事务回滚。
+
+## 最佳实践
 
 - tick-based 调度适合游戏逻辑，Duration 调度适合外部时间语义。
 - 重复任务要有明确停止条件。
 - 长耗时任务拆成异步阶段和主线程应用阶段。
 - 事件监听器里如果不确定当前线程，保守地通过 `runMain` 应用世界状态变更。
+- 保存和玩家、房间、小游戏局相关的任务句柄，在会话结束时主动 cancel。
+- 异步任务里只保留必要的不可变数据，例如玩家 UUID、配置值、查询参数；不要长期持有可变事件对象。
+
+## 常见坑
+
+- 在 `runAsync` 中直接操作未封装的 NMS/vanilla 对象，容易引发线程安全问题。
+- 把每 tick 都要执行的轻量逻辑写成大量 `runMainAfterTicks(..., 1)` 链式递归，会比一个重复任务更难取消和排查。
+- 在异步 worker 中高频调用会同步等待主线程的 API，可能把 worker 堵住。
+- 忘记取消重复任务，插件虽然禁用时会清理作用域任务，但玩家会话结束后仍可能多跑一段无意义逻辑。
+- 把真实时间和 tick 时间混用：TPS 波动时，`Duration` 延迟和 tick 延迟的体验会不同。
+
+## 综合示例：异步加载后更新玩家状态
+
+下面的例子在后台加载玩家数据，然后回到服务端线程发送消息和执行传送。中间只把 `Player` 作为最终应用阶段使用；耗时查询阶段只做纯数据加载。
+
+```java
+public void loadProfileAndTeleport(io.fand.api.entity.Player player) {
+    var playerId = player.uniqueId();
+    var fallback = player.location();
+
+    context.scheduler().runAsync(() -> {
+        var profile = profileStore.load(playerId);
+
+        context.scheduler().runMain(() -> {
+            if (!player.online()) {
+                return;
+            }
+            player.sendMessage(Component.text("Loaded profile " + profile.name()));
+            player.teleport(profile.lastLocation().orElse(fallback));
+        });
+    });
+}
+```

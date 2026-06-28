@@ -92,9 +92,66 @@ personal.resetDisplayedObjectives();
 
 `clearDisplayedObjective(slot)` / `clearDisplayedObjectives()` clear the per-player display slot and keep overriding the global display. `resetDisplayedObjective(slot)` / `resetDisplayedObjectives()` remove the per-player override and restore the global display.
 
-## Guidelines
+## Design Philosophy
+
+Fand separates `ScoreboardService` from `PlayerScoreboard` to make real vanilla scoreboard state distinct from what one player currently sees. Global objectives and teams fit rankings, teams, and nameplates. Per-player overrides fit quest progress, personal HUDs, and spectator views.
+
+The difference between `clearDisplayedObjective` and `resetDisplayedObjective` is intentional. Clear means "this player's slot is empty and still overrides global display"; reset means "remove the per-player override and show the global display again." This prevents closing a personal HUD from accidentally clearing a server-wide sidebar.
+
+Registration handles use identity semantics so an old handle cannot remove a newer object registered later with the same name. Plugin reloads and module rebuilds are less likely to delete fresh state by accident.
+
+## Best Practices
 
 - Keep objective/team names short and stable to avoid conflicts.
 - Prefix plugin-owned objectives and teams with the plugin id, such as `example_points`.
 - For frequently updated sidebars, update only changed scores instead of rebuilding every tick.
 - Per-player display fits quest progress, personal HUDs, and spectator information; global rankings fit persistent objectives.
+- Use teams for nameplate prefix, suffix, color, collision, and visibility instead of hand-written packets for normal team behavior.
+- Reset personal display overrides when a player leaves an arena, closes a HUD, or exits a session.
+
+## Common Pitfalls
+
+- `clearDisplayedObjective(slot)` keeps overriding global display with an empty slot. Use `resetDisplayedObjective(slot)` to restore global display.
+- `score(owner)` creates or returns a score entry; use `existingScore(owner)` when you only want to query.
+- The global scoreboard is shared state; changing a global display slot affects all players who are not overriding that slot.
+- Team members are strings. Player convenience methods use player names; entity convenience methods use UUID strings.
+- Rebuilding objectives or teams every tick causes unnecessary client refreshes and server work.
+
+## Complete Example: Personal Quest Sidebar and Team Prefix
+
+This example shows a personal quest sidebar for one player and uses a global team to add an admin nameplate prefix.
+
+```java
+package com.example;
+
+import io.fand.api.entity.Player;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import io.fand.api.scoreboard.ScoreDisplaySlot;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+public final class ExamplePlugin implements Plugin {
+    @Override
+    public void onEnable(PluginContext context) {
+        context.scoreboard().registerTeam("example_admin");
+        var team = context.scoreboard().team("example_admin").orElseThrow();
+        team.setPrefix(Component.text("[Admin] "));
+        team.setColor(NamedTextColor.RED);
+    }
+
+    public void showQuest(Player player, int progress, int total) {
+        var board = player.scoreboard();
+        board.registerObjective("example_quest", Component.text("Quest"));
+
+        var objective = board.objective("example_quest").orElseThrow();
+        objective.score("Progress").setValue(progress);
+        objective.score("Total").setValue(total);
+        board.setDisplayedObjective(ScoreDisplaySlot.SIDEBAR, objective);
+    }
+
+    public void hideQuest(Player player) {
+        player.scoreboard().resetDisplayedObjective(ScoreDisplaySlot.SIDEBAR);
+    }
+}
+```

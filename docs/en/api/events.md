@@ -104,3 +104,78 @@ context.events()
 ```
 
 Hot paths can call `hasListeners` before building expensive event payloads.
+
+## Design Philosophy
+
+Fand's event bus only dispatches events in order. It does not guess the thread model for plugins. Events may come from the server tick, network threads, external service callbacks, or a plugin executor; if the bus switched threads automatically, listeners would lose a clear ordering relationship with the event source.
+
+Priority order from `LOWEST` to `OBSERVER` gives plugins predictable cooperation. Early listeners can prepare defaults or block early, middle listeners do the main work, later listeners override or fix results, and `OBSERVER` should only inspect the final state.
+
+`hasListeners` exists for hot-path performance. Server internals and large plugins can skip building expensive event payloads when nobody is listening.
+
+## Best Practices
+
+- Keep listeners short; put I/O, database, and network work into scheduler async phases.
+- Confirm the listener is on the main thread before mutating world, entity, or inventory state. If unsure, apply through `context.scheduler().runMain(...)`.
+- Use `LOWEST` through `HIGHEST` for listeners that change results; use `OBSERVER` for logging, metrics, and final-state synchronization.
+- Keep `EventSubscription` handles for temporary listeners and close them when the business flow ends.
+- For custom events fired on hot paths, check `hasListeners` before building the event object.
+- Listener failures are collected and thrown as `EventDispatchException`; do not rely on an exception stopping later listeners.
+
+## Common Pitfalls
+
+- Cancelled events are still delivered to later listeners, and later listeners may change the cancellation state again.
+- `OBSERVER` is a convention for final observation, not an enforced read-only mode. Mutating there makes results harder for other plugins to reason about.
+- `fireAsync` runs listeners sequentially on the executor you supply, but world-state access still follows normal thread boundaries.
+- `registerListener` returns one grouped subscription; individual `@Subscribe` methods cannot be unregistered separately.
+- Keeping mutable `Player`, `Entity`, or event payloads beyond the event lifecycle can cross threads or outlive valid state.
+
+## Complete Example: Join/Quit Messages and Async Audit
+
+This example handles join/quit messages on event threads and sends audit logging to an async task. The async phase stores only UUID and name strings, not the event object.
+
+```java
+package com.example;
+
+import io.fand.api.event.EventPriority;
+import io.fand.api.event.Listener;
+import io.fand.api.event.Subscribe;
+import io.fand.api.event.player.PlayerJoinEvent;
+import io.fand.api.event.player.PlayerQuitEvent;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    @Override
+    public void onEnable(PluginContext context) {
+        context.events().registerListener(new JoinQuitListener(context));
+    }
+
+    private static final class JoinQuitListener implements Listener {
+        private final PluginContext context;
+
+        private JoinQuitListener(PluginContext context) {
+            this.context = context;
+        }
+
+        @Subscribe(priority = EventPriority.HIGH)
+        void onJoin(PlayerJoinEvent event) {
+            var player = event.player();
+            event.setMessage(Component.text("+ " + player.name()));
+            player.sendMessage(Component.text("Welcome, " + player.name()));
+
+            var playerId = player.uniqueId();
+            var name = player.name();
+            context.scheduler().runAsync(() ->
+                    context.logger().info("Audit join {} ({})", name, playerId));
+        }
+
+        @Subscribe(priority = EventPriority.OBSERVER)
+        void onQuit(PlayerQuitEvent event) {
+            var player = event.player();
+            context.logger().info("Quit reason for {}: {}", player.name(), event.reason());
+        }
+    }
+}
+```

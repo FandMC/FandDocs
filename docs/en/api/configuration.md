@@ -85,9 +85,72 @@ You can also specify a format explicitly:
 var config = context.configurations().load(file, ConfigurationFormat.JSON);
 ```
 
-## Guidelines
+## Design Philosophy
+
+Fand separates the default plugin configuration from arbitrary configuration file loading so common plugins stay simple, while larger plugins can split `messages.yml`, `database.json`, or other data files when needed.
+
+Typed getters return defaults on type mismatch so each read site declares a fallback strategy. Critical configuration should still be validated by plugin code with clear feedback for server owners.
+
+`ConfigurationSection` is a view over the same in-memory document, not an independent copy. Mutating a section affects the root document, while persistence is still controlled by root `Configuration.save()`.
+
+## Best Practices
 
 - Use lowercase dot-separated keys, such as `database.host`.
 - Give typed getters reasonable defaults to avoid startup failures from user mistakes.
 - Call `save()` only when persisting user-facing changes.
 - `Configuration` is not thread-safe; synchronize access yourself if multiple threads touch the same instance.
+- Put a default `config.yml` at the plugin jar root so first startup generates readable configuration.
+- Keep keys stable. When renaming keys, include migration or compatibility reads.
+- Use typed getters for normal toggles, messages, and numeric thresholds; validate critical values such as database endpoints and external tokens.
+- Store editable server-owner settings in configuration; store player data, caches, and runtime statistics elsewhere.
+
+## Common Pitfalls
+
+- `getSection("path")` creates an empty section when missing. Use `contains("path")` if you only want to check existence.
+- Mutating a child section without calling `save()` on the root loses changes after restart.
+- `reloadConfig()` discards unsaved in-memory changes.
+- A typed getter returning the default does not prove the file is valid; critical fields still need validation.
+- Concurrent reads and writes to the same `Configuration` are not synchronized by the API.
+
+## Complete Example: Config-Driven Welcome Message
+
+This example loads the default configuration and sends a configured welcome message on join. The string template is plugin logic; Fand does not prescribe a message format.
+
+```java
+package com.example;
+
+import io.fand.api.event.player.PlayerJoinEvent;
+import io.fand.api.plugin.Plugin;
+import io.fand.api.plugin.PluginContext;
+import net.kyori.adventure.text.Component;
+
+public final class ExamplePlugin implements Plugin {
+    private String welcomeMessage = "Welcome, {player}";
+    private boolean enabled = true;
+
+    @Override
+    public void onEnable(PluginContext context) {
+        loadSettings(context);
+
+        context.events().subscribe(PlayerJoinEvent.class, event -> {
+            if (!enabled) {
+                return;
+            }
+            var text = welcomeMessage.replace("{player}", event.player().name());
+            event.player().sendMessage(Component.text(text));
+        });
+    }
+
+    private void loadSettings(PluginContext context) {
+        var config = context.config();
+        enabled = config.getBoolean("welcome.enabled", true);
+        welcomeMessage = config.getString("welcome.message", "Welcome, {player}");
+
+        if (!config.contains("welcome.enabled")) {
+            config.set("welcome.enabled", enabled);
+            config.set("welcome.message", welcomeMessage);
+            config.save();
+        }
+    }
+}
+```
