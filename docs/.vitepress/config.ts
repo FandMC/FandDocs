@@ -47,7 +47,8 @@ export default defineConfig({
               text: '指南',
               items: [
                 { text: '快速开始', link: '/cn/guide/getting-started' },
-                { text: '插件模板', link: '/cn/guide/plugin-template' }
+                { text: '插件模板', link: '/cn/guide/plugin-template' },
+                { text: '插件描述文件', link: '/cn/guide/plugin-json' }
               ]
             }
           ],
@@ -55,7 +56,14 @@ export default defineConfig({
             {
               text: 'API',
               items: [
-                { text: '概览', link: '/cn/api/' }
+                { text: '概览', link: '/cn/api/' },
+                { text: '插件生命周期', link: '/cn/api/plugin-lifecycle' },
+                { text: '事件', link: '/cn/api/events' },
+                { text: '命令', link: '/cn/api/commands' },
+                { text: '调度器', link: '/cn/api/scheduler' },
+                { text: '配置', link: '/cn/api/configuration' },
+                { text: '权限', link: '/cn/api/permissions' },
+                { text: '服务注册', link: '/cn/api/services' }
               ]
             }
           ]
@@ -102,7 +110,8 @@ export default defineConfig({
               text: 'Guide',
               items: [
                 { text: 'Getting Started', link: '/en/guide/getting-started' },
-                { text: 'Plugin Template', link: '/en/guide/plugin-template' }
+                { text: 'Plugin Template', link: '/en/guide/plugin-template' },
+                { text: 'Plugin Descriptor', link: '/en/guide/plugin-json' }
               ]
             }
           ],
@@ -110,7 +119,14 @@ export default defineConfig({
             {
               text: 'API',
               items: [
-                { text: 'Overview', link: '/en/api/' }
+                { text: 'Overview', link: '/en/api/' },
+                { text: 'Plugin Lifecycle', link: '/en/api/plugin-lifecycle' },
+                { text: 'Events', link: '/en/api/events' },
+                { text: 'Commands', link: '/en/api/commands' },
+                { text: 'Scheduler', link: '/en/api/scheduler' },
+                { text: 'Configuration', link: '/en/api/configuration' },
+                { text: 'Permissions', link: '/en/api/permissions' },
+                { text: 'Services', link: '/en/api/services' }
               ]
             }
           ]
