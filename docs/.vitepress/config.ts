@@ -44,11 +44,24 @@ export default defineConfig({
         sidebar: {
           '/cn/guide/': [
             {
-              text: '指南',
+              text: '基础',
+              collapsed: false,
               items: [
                 { text: '快速开始', link: '/cn/guide/getting-started' },
                 { text: '插件模板', link: '/cn/guide/plugin-template' },
                 { text: '插件描述文件', link: '/cn/guide/plugin-json' }
+              ]
+            },
+            {
+              text: '示例插件',
+              collapsed: false,
+              items: [
+                { text: '示例插件概览', link: '/cn/guide/examples/' },
+                { text: '随机传送', link: '/cn/guide/examples/rtp' },
+                { text: '进服欢迎', link: '/cn/guide/examples/welcome' },
+                { text: '每日礼包', link: '/cn/guide/examples/daily-kit' },
+                { text: '个人传送点', link: '/cn/guide/examples/home' },
+                { text: '挖矿统计', link: '/cn/guide/examples/mining-stats' }
               ]
             }
           ],
@@ -123,11 +136,24 @@ export default defineConfig({
         sidebar: {
           '/en/guide/': [
             {
-              text: 'Guide',
+              text: 'Basics',
+              collapsed: false,
               items: [
                 { text: 'Getting Started', link: '/en/guide/getting-started' },
                 { text: 'Plugin Template', link: '/en/guide/plugin-template' },
                 { text: 'Plugin Descriptor', link: '/en/guide/plugin-json' }
+              ]
+            },
+            {
+              text: 'Example Plugins',
+              collapsed: false,
+              items: [
+                { text: 'Examples Overview', link: '/en/guide/examples/' },
+                { text: 'Random Teleport', link: '/en/guide/examples/rtp' },
+                { text: 'Join Welcome', link: '/en/guide/examples/welcome' },
+                { text: 'Daily Kit', link: '/en/guide/examples/daily-kit' },
+                { text: 'Player Homes', link: '/en/guide/examples/home' },
+                { text: 'Mining Stats', link: '/en/guide/examples/mining-stats' }
               ]
             }
           ],

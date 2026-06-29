@@ -96,5 +96,6 @@ Build the plugin jar:
 ## Next Steps
 
 - Use the [Plugin Template](/en/guide/plugin-template) to create a runnable project.
+- Read [Example Plugins](/en/guide/examples/) for small RTP, welcome-message, and daily-kit plugins.
 - Read the [API Overview](/en/api/) for service entry points.
 - Start real logic with [Events](/en/api/events), [Commands](/en/api/commands), and [Scheduler](/en/api/scheduler).

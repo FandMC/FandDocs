@@ -93,5 +93,6 @@ Fand.server().performance();
 ## 下一步
 
 - 用 [插件模板](/cn/guide/plugin-template) 快速创建可运行工程。
+- 看 [示例插件](/cn/guide/examples/) 直接照着写 RTP、欢迎消息、每日礼包这类小功能。
 - 阅读 [API 概览](/cn/api/) 了解服务入口。
 - 从 [事件](/cn/api/events)、[命令](/cn/api/commands)、[调度器](/cn/api/scheduler) 开始写实际逻辑。
