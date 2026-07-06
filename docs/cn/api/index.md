@@ -70,7 +70,7 @@ Fand API 可以按开发任务分成几层：
 | 日志 | `context.logger()` | 使用插件 id 命名的 SLF4J logger |
 | 描述文件 | `context.descriptor()` | 读取 `id`、`version`、`mainClass`、`apiVersion`、加载关系、元数据和权限声明 |
 | 生命周期事件 | `context.events()` | 注册玩家、实体、世界、插件和服务端事件监听器 |
-| 命令 | `context.commands()` | 注解命令、描述符命令、补全、可见命令查询 |
+| 命令 | `context.commands()` | Builder 命令、注解命令、补全、可见命令查询 |
 | 调度器 | `context.scheduler()` | 主线程、异步、延迟、周期、tick-based 任务 |
 | 权限 | `context.permissions()` | 权限节点、权限树、附件、组、prefix/suffix/meta、上下文查询 |
 | 配置 | `context.config()` | 插件默认 `config.yml`，支持重载和保存 |
@@ -138,15 +138,11 @@ Fand API 可以按开发任务分成几层：
 ```java
 package com.example;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
-import io.fand.api.command.CommandSpec;
 import io.fand.api.event.player.PlayerJoinEvent;
 import io.fand.api.permission.PermissionDefault;
 import io.fand.api.permission.PermissionDescriptor;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
 public final class ExamplePlugin implements Plugin {
@@ -161,7 +157,12 @@ public final class ExamplePlugin implements Plugin {
                 "example.reload",
                 PermissionDefault.OPERATOR));
 
-        context.commands().register(new ReloadCommand(context));
+        context.commands().register("example", command -> command
+                .permission("example.reload")
+                .literal("reload", reload -> reload.executes(reloadCommand -> {
+                    context.reloadConfig();
+                    reloadCommand.sender().sendMessage(Component.text("Example config reloaded"));
+                })));
 
         context.events().subscribe(PlayerJoinEvent.class, event -> {
             if (enabled) {
@@ -171,20 +172,6 @@ public final class ExamplePlugin implements Plugin {
         });
     }
 
-    @CommandSpec(label = "example", subcommands = {"reload"}, permission = "example.reload")
-    private static final class ReloadCommand implements CommandExecutor {
-        private final PluginContext context;
-
-        private ReloadCommand(PluginContext context) {
-            this.context = context;
-        }
-
-        @Override
-        public void execute(CommandSender sender, String label, List<String> args) {
-            context.reloadConfig();
-            sender.sendMessage(Component.text("Example config reloaded"));
-        }
-    }
 }
 ```
 

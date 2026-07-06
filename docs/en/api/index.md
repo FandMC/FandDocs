@@ -70,7 +70,7 @@ Fand API can be read in layers:
 | Logging | `context.logger()` | SLF4J logger named after the plugin id |
 | Descriptor | `context.descriptor()` | Read `id`, `version`, `mainClass`, `apiVersion`, load relations, metadata, and permission declarations |
 | Events | `context.events()` | Register player, entity, world, plugin, and server listeners |
-| Commands | `context.commands()` | Annotated commands, descriptor commands, completions, visible command lookup |
+| Commands | `context.commands()` | Builder commands, annotated commands, completions, visible command lookup |
 | Scheduler | `context.scheduler()` | Main-thread, async, delayed, repeating, tick-based tasks |
 | Permissions | `context.permissions()` | Nodes, trees, attachments, groups, prefix/suffix/meta, context lookup |
 | Configuration | `context.config()` | Default plugin `config.yml`, reload, save |
@@ -138,15 +138,11 @@ This example shows one plugin entry point combining descriptor access, configura
 ```java
 package com.example;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
-import io.fand.api.command.CommandSpec;
 import io.fand.api.event.player.PlayerJoinEvent;
 import io.fand.api.permission.PermissionDefault;
 import io.fand.api.permission.PermissionDescriptor;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
 public final class ExamplePlugin implements Plugin {
@@ -161,7 +157,12 @@ public final class ExamplePlugin implements Plugin {
                 "example.reload",
                 PermissionDefault.OPERATOR));
 
-        context.commands().register(new ReloadCommand(context));
+        context.commands().register("example", command -> command
+                .permission("example.reload")
+                .literal("reload", reload -> reload.executes(reloadCommand -> {
+                    context.reloadConfig();
+                    reloadCommand.sender().sendMessage(Component.text("Example config reloaded"));
+                })));
 
         context.events().subscribe(PlayerJoinEvent.class, event -> {
             if (enabled) {
@@ -171,20 +172,6 @@ public final class ExamplePlugin implements Plugin {
         });
     }
 
-    @CommandSpec(label = "example", subcommands = {"reload"}, permission = "example.reload")
-    private static final class ReloadCommand implements CommandExecutor {
-        private final PluginContext context;
-
-        private ReloadCommand(PluginContext context) {
-            this.context = context;
-        }
-
-        @Override
-        public void execute(CommandSender sender, String label, List<String> args) {
-            context.reloadConfig();
-            sender.sendMessage(Component.text("Example config reloaded"));
-        }
-    }
 }
 ```
 

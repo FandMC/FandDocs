@@ -11,27 +11,22 @@
 ```java
 package com.example.home;
 
-import io.fand.api.command.CommandDescriptor;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 
 public final class HomePlugin implements Plugin {
     @Override
     public void onEnable(PluginContext context) {
         var homes = new HomeStore(context);
+        var setHome = new SetHomeCommand(homes);
+        var home = new HomeCommand(homes);
 
-        context.commands().register(
-                command("sethome", "home.set"),
-                new SetHomeCommand(homes));
-
-        context.commands().register(
-                command("home", "home.use"),
-                new HomeCommand(homes));
-    }
-
-    private static CommandDescriptor command(String label, String permission) {
-        return new CommandDescriptor("ignored", label, List.of(), List.of(), permission);
+        context.commands().register("sethome", command -> command
+                .permission("home.set")
+                .executes(setHome::execute));
+        context.commands().register("home", command -> command
+                .permission("home.use")
+                .executes(home::execute));
     }
 }
 ```
@@ -95,21 +90,19 @@ final class HomeStore {
 ```java
 package com.example.home;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
-final class SetHomeCommand implements CommandExecutor {
+final class SetHomeCommand {
     private final HomeStore homes;
 
     SetHomeCommand(HomeStore homes) {
         this.homes = homes;
     }
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("只有玩家可以设置家"));
             return;
@@ -126,21 +119,19 @@ final class SetHomeCommand implements CommandExecutor {
 ```java
 package com.example.home;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
-final class HomeCommand implements CommandExecutor {
+final class HomeCommand {
     private final HomeStore homes;
 
     HomeCommand(HomeStore homes) {
         this.homes = homes;
     }
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("只有玩家可以传送回家"));
             return;

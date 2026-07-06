@@ -11,23 +11,18 @@
 ```java
 package com.example.rtp;
 
-import io.fand.api.command.CommandDescriptor;
+import io.fand.api.command.Arguments;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 
 public final class RtpPlugin implements Plugin {
     @Override
     public void onEnable(PluginContext context) {
-        var descriptor = new CommandDescriptor(
-                "ignored",
-                "rtp",
-                List.of(),
-                List.of("radius"),
-                List.of(),
-                "rtp.use");
-
-        context.commands().register(descriptor, new RtpCommand());
+        var command = new RtpCommand();
+        context.commands().register("rtp", root -> root
+                .permission("rtp.use")
+                .argument("radius", Arguments.integer(100, 20_000).optional(RtpCommand.RADIUS), radius -> radius
+                        .executes(command::execute)));
     }
 }
 ```
@@ -39,25 +34,23 @@ public final class RtpPlugin implements Plugin {
 ```java
 package com.example.rtp;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
 import io.fand.api.world.HeightmapType;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.Component;
 
-final class RtpCommand implements CommandExecutor {
-    private static final int RADIUS = 5_000;
+final class RtpCommand {
+    static final int RADIUS = 5_000;
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("只有玩家可以使用这个命令"));
             return;
         }
 
-        var radius = parseRadius(args);
+        var radius = command.intValue("radius");
         var target = randomLocation(player, radius);
 
         player.sendMessage(Component.text("正在随机传送..."));
@@ -71,17 +64,6 @@ final class RtpCommand implements CommandExecutor {
                 player.sendMessage(Component.text("传送失败，你可能已经离线"));
             }
         });
-    }
-
-    private static int parseRadius(List<String> args) {
-        if (args.isEmpty()) {
-            return RADIUS;
-        }
-        try {
-            return Math.max(100, Math.min(20_000, Integer.parseInt(args.getFirst())));
-        } catch (NumberFormatException ignored) {
-            return RADIUS;
-        }
     }
 
     private static io.fand.api.world.Location randomLocation(Player player, int radius) {
@@ -98,7 +80,7 @@ final class RtpCommand implements CommandExecutor {
 }
 ```
 
-`CommandDescriptor` 里的 namespace 在插件作用域里会被替换成当前插件 id，所以示例写 `"ignored"` 只是占位。命令最终会注册到你的插件命名空间下。
+`context.commands()` 会把命令归属到当前插件命名空间下。半径参数由 `Arguments.integer(100, 20_000).optional(RtpCommand.RADIUS)` 负责解析、限制范围和提供默认值，业务代码只读取已经解析好的值。
 
 ## 可以继续改进
 

@@ -11,11 +11,9 @@ The entry point registers the listener and command. The storage key is shared by
 ```java
 package com.example.mining;
 
-import io.fand.api.command.CommandDescriptor;
 import io.fand.api.event.block.BlockBreakEvent;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 
 public final class MiningStatsPlugin implements Plugin {
     static final String DIAMONDS_MINED = "diamondsMined";
@@ -24,9 +22,10 @@ public final class MiningStatsPlugin implements Plugin {
     public void onEnable(PluginContext context) {
         context.events().subscribe(BlockBreakEvent.class, new MiningListener(context));
 
-        context.commands().register(
-                new CommandDescriptor("ignored", "minediamonds", List.of(), List.of(), "mining.stats"),
-                new MiningStatsCommand(context));
+        var command = new MiningStatsCommand(context);
+        context.commands().register("minediamonds", root -> root
+                .permission("mining.stats")
+                .executes(command::execute));
     }
 
     @Override
@@ -83,22 +82,20 @@ final class MiningListener implements EventListener<BlockBreakEvent> {
 ```java
 package com.example.mining;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
-final class MiningStatsCommand implements CommandExecutor {
+final class MiningStatsCommand {
     private final PluginContext context;
 
     MiningStatsCommand(PluginContext context) {
         this.context = context;
     }
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("Only players can check their own stats"));
             return;

@@ -11,23 +11,18 @@ The plugin entry point only registers the command. Command behavior lives in its
 ```java
 package com.example.rtp;
 
-import io.fand.api.command.CommandDescriptor;
+import io.fand.api.command.Arguments;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 
 public final class RtpPlugin implements Plugin {
     @Override
     public void onEnable(PluginContext context) {
-        var descriptor = new CommandDescriptor(
-                "ignored",
-                "rtp",
-                List.of(),
-                List.of("radius"),
-                List.of(),
-                "rtp.use");
-
-        context.commands().register(descriptor, new RtpCommand());
+        var command = new RtpCommand();
+        context.commands().register("rtp", root -> root
+                .permission("rtp.use")
+                .argument("radius", Arguments.integer(100, 20_000).optional(RtpCommand.RADIUS), radius -> radius
+                        .executes(command::execute)));
     }
 }
 ```
@@ -39,25 +34,23 @@ The command class handles only `/rtp`. That keeps cooldowns, destination checks,
 ```java
 package com.example.rtp;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
 import io.fand.api.world.HeightmapType;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.Component;
 
-final class RtpCommand implements CommandExecutor {
-    private static final int RADIUS = 5_000;
+final class RtpCommand {
+    static final int RADIUS = 5_000;
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("Only players can use this command"));
             return;
         }
 
-        var radius = parseRadius(args);
+        var radius = command.intValue("radius");
         var target = randomLocation(player, radius);
 
         player.sendMessage(Component.text("Finding a random location..."));
@@ -71,17 +64,6 @@ final class RtpCommand implements CommandExecutor {
                 player.sendMessage(Component.text("Teleport failed; you may have gone offline"));
             }
         });
-    }
-
-    private static int parseRadius(List<String> args) {
-        if (args.isEmpty()) {
-            return RADIUS;
-        }
-        try {
-            return Math.max(100, Math.min(20_000, Integer.parseInt(args.getFirst())));
-        } catch (NumberFormatException ignored) {
-            return RADIUS;
-        }
     }
 
     private static io.fand.api.world.Location randomLocation(Player player, int radius) {
@@ -98,7 +80,8 @@ final class RtpCommand implements CommandExecutor {
 }
 ```
 
-The namespace in `CommandDescriptor` is replaced by the current plugin id when registered through `context.commands()`, so `"ignored"` is only a placeholder.
+`context.commands()` owns the command under the current plugin namespace. The radius argument is parsed, bounded, and
+defaulted by `Arguments.integer(100, 20_000).optional(RtpCommand.RADIUS)`, so the command logic can read the parsed value directly.
 
 ## Next Improvements
 

@@ -9,22 +9,16 @@
 ```java
 package com.example.dailykit;
 
-import io.fand.api.command.CommandDescriptor;
 import io.fand.api.plugin.Plugin;
 import io.fand.api.plugin.PluginContext;
-import java.util.List;
 
 public final class DailyKitPlugin implements Plugin {
     @Override
     public void onEnable(PluginContext context) {
-        var descriptor = new CommandDescriptor(
-                "ignored",
-                "dailykit",
-                List.of(),
-                List.of(),
-                "dailykit.claim");
-
-        context.commands().register(descriptor, new DailyKitCommand(context));
+        var command = new DailyKitCommand(context);
+        context.commands().register("dailykit", root -> root
+                .permission("dailykit.claim")
+                .executes(command::execute));
     }
 }
 ```
@@ -34,17 +28,15 @@ public final class DailyKitPlugin implements Plugin {
 ```java
 package com.example.dailykit;
 
-import io.fand.api.command.CommandExecutor;
-import io.fand.api.command.CommandSender;
+import io.fand.api.command.CommandContext;
 import io.fand.api.entity.Player;
 import io.fand.api.item.ItemKey;
 import io.fand.api.item.ItemTypes;
 import io.fand.api.plugin.PluginContext;
 import java.time.Duration;
-import java.util.List;
 import net.kyori.adventure.text.Component;
 
-final class DailyKitCommand implements CommandExecutor {
+final class DailyKitCommand {
     private static final String LAST_CLAIM_KEY = "lastClaimMillis";
     private static final long COOLDOWN_MILLIS = Duration.ofHours(24).toMillis();
 
@@ -54,8 +46,8 @@ final class DailyKitCommand implements CommandExecutor {
         this.context = context;
     }
 
-    @Override
-    public void execute(CommandSender sender, String label, List<String> args) {
+    void execute(CommandContext command) {
+        var sender = command.sender();
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Component.text("只有玩家可以领取礼包"));
             return;
